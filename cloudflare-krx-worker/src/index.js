@@ -262,7 +262,9 @@ export class KisCollector {
     if (this.snapshotsRefreshing) return this.snapshotsRefreshing;
     const now = Date.now();
     const lastAttempt = Number(await this.ctx.storage.get("dailySnapshotAttemptAt") || 0);
-    if (now - lastAttempt < SNAPSHOT_INTERVAL_MS) return;
+    const savedStatus = await this.ctx.storage.get("dailySnapshotStatus");
+    const retryInterval = savedStatus?.error ? 2 * 60 * 1000 : SNAPSHOT_INTERVAL_MS;
+    if (now - lastAttempt < retryInterval) return;
 
     this.snapshotsRefreshing = this.refreshDailySnapshots(now);
     try {
