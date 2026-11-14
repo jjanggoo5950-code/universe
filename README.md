@@ -4,8 +4,9 @@
 
 ## 웹에서 보기
 
-GitHub Pages가 활성화되면 다음 주소에서 볼 수 있습니다:
 <https://jjanggoo5950-code.github.io/universe/>
+
+`main` 브랜치에 변경 사항을 올리면 GitHub Actions가 페이지를 다시 배포합니다.
 
 ## Python 터미널 애니메이션
 
