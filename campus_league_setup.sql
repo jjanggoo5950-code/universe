@@ -17,6 +17,9 @@ create table if not exists public.campus_players (
   joined_at timestamptz not null default now()
 );
 
+create index if not exists campus_players_nickname_normalized
+  on public.campus_players (lower(btrim(nickname)));
+
 create table if not exists public.campus_wallets (
   user_id uuid primary key references public.campus_players(user_id) on delete cascade,
   cash_krw numeric(18,2) not null default 10000000 check (cash_krw >= 0),
@@ -116,6 +119,33 @@ values
   ('USD/KRW','FX','USD/KRW',1380,'KRW',0,'example','demo',false,now())
 on conflict (symbol) do nothing;
 
+create or replace function public.is_campus_nickname_available(p_nickname text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_nickname text := trim(coalesce(p_nickname,''));
+begin
+  if v_uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if not (
+    coalesce(auth.jwt() -> 'app_metadata' -> 'providers', '[]'::jsonb) ? 'kakao'
+    or auth.jwt() -> 'app_metadata' ->> 'provider' = 'kakao'
+  ) then
+    raise exception '카카오 로그인 후 이용해주세요.';
+  end if;
+  if char_length(v_nickname) not between 1 and 20 then return false; end if;
+  return not exists (
+    select 1 from public.campus_players
+    where lower(btrim(nickname)) = lower(v_nickname)
+      and user_id <> v_uid
+  );
+end;
+$$;
+
 create or replace function public.join_campus_league(p_nickname text, p_school_name text)
 returns jsonb
 language plpgsql
@@ -125,6 +155,8 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_school_id bigint;
+  v_nickname text := trim(coalesce(p_nickname,''));
+  v_school_name text := trim(coalesce(p_school_name,''));
 begin
   if v_uid is null then raise exception '로그인이 필요합니다.'; end if;
   if not (
@@ -133,20 +165,30 @@ begin
   ) then
     raise exception '카카오 로그인 후 이용해주세요.';
   end if;
-  if char_length(trim(coalesce(p_nickname,''))) not between 1 and 20 then raise exception '별명은 1~20자로 입력해주세요.'; end if;
-  if char_length(trim(coalesce(p_school_name,''))) not between 2 and 40 then raise exception '대학교 이름을 확인해주세요.'; end if;
+  if char_length(v_nickname) not between 1 and 20 then raise exception '별명은 1~20자로 입력해주세요.'; end if;
+  if char_length(v_school_name) not between 2 and 80 then raise exception '대학교 이름을 2~80자로 입력해주세요.'; end if;
 
-  select id into v_school_id from public.campus_schools where lower(name)=lower(trim(p_school_name)) limit 1;
+  -- Serialize claims for the same normalized nickname so simultaneous joins cannot claim it twice.
+  perform pg_advisory_xact_lock(hashtextextended(lower(v_nickname), 0));
+  if exists (
+    select 1 from public.campus_players
+    where lower(btrim(nickname)) = lower(v_nickname)
+      and user_id <> v_uid
+  ) then
+    raise exception '이미 사용 중인 별명입니다. 다른 별명을 입력해주세요.' using errcode = '23505';
+  end if;
+
+  select id into v_school_id from public.campus_schools where lower(name)=lower(v_school_name) limit 1;
   if v_school_id is null then
-    insert into public.campus_schools(name) values (trim(p_school_name))
+    insert into public.campus_schools(name) values (v_school_name)
       on conflict do nothing returning id into v_school_id;
     if v_school_id is null then
-      select id into v_school_id from public.campus_schools where lower(name)=lower(trim(p_school_name)) limit 1;
+      select id into v_school_id from public.campus_schools where lower(name)=lower(v_school_name) limit 1;
     end if;
   end if;
 
   insert into public.campus_players(user_id,nickname,school_id)
-    values (v_uid,trim(p_nickname),v_school_id)
+    values (v_uid,v_nickname,v_school_id)
     on conflict (user_id) do update set nickname=excluded.nickname;
   insert into public.campus_wallets(user_id) values (v_uid) on conflict (user_id) do nothing;
   return jsonb_build_object('ok',true,'starting_capital_krw',10000000);
@@ -341,11 +383,13 @@ as $$
   );
 $$;
 
+revoke all on function public.is_campus_nickname_available(text) from public;
 revoke all on function public.join_campus_league(text,text) from public;
 revoke all on function public.convert_campus_krw_to_usd(numeric) from public;
 revoke all on function public.execute_campus_order(text,text,integer) from public;
 revoke all on function public.get_my_campus_portfolio() from public;
 revoke all on function public.get_campus_league_overview() from public;
+grant execute on function public.is_campus_nickname_available(text) to authenticated;
 grant execute on function public.join_campus_league(text,text) to authenticated;
 grant execute on function public.convert_campus_krw_to_usd(numeric) to authenticated;
 grant execute on function public.execute_campus_order(text,text,integer) to authenticated;

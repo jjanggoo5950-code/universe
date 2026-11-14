@@ -136,6 +136,39 @@
     .join-copy { margin: 7px 0 14px; color: #8d97a8; font-size: 10px; line-height: 1.6; }
     .join-form { display: grid; gap: 9px; }
     .join-form .primary { width: 100%; min-height: 38px; }
+
+    .school-picker-field { display:grid; gap:7px; }
+    .school-picker-button { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:42px; padding:10px 11px; border:1px solid var(--line); border-radius:7px; color:#e6edf7; background:#0b0f15; text-align:left; font-size:11px; transition:border-color .18s ease,background .18s ease; }
+    .school-picker-button:hover,.school-picker-button:focus-visible { border-color:rgba(197,243,107,.55); background:#10161c; outline:none; }
+    .school-picker-label { overflow:hidden; color:#8d97a8; text-overflow:ellipsis; white-space:nowrap; }
+    .school-picker-button.has-value .school-picker-label { color:#eef2f8; }
+    .school-picker-action { display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; color:var(--lime); font-size:10px; }
+    .school-picker-help { margin:0; color:#778293; font-size:9px; line-height:1.5; }
+    .nickname-check { min-height:14px; margin:-3px 0 1px; color:#7f8999; font-size:9px; line-height:1.5; }
+    .nickname-check.pending { color:#aeb8c7; } .nickname-check.available { color:var(--mint); } .nickname-check.taken,.nickname-check.error { color:var(--red); }
+    .school-dialog { width:min(560px,calc(100% - 28px)); max-height:min(86vh,720px); padding:0; overflow:hidden; border:1px solid rgba(197,243,107,.22); border-radius:15px; color:var(--ink); background:#11151d; box-shadow:0 28px 100px #000b; }
+    .school-dialog::backdrop { background:rgba(4,6,10,.82); backdrop-filter:blur(9px); }
+    .school-dialog-content { display:flex; flex-direction:column; max-height:inherit; }
+    .school-dialog-head { display:flex; align-items:flex-start; justify-content:space-between; gap:15px; padding:22px 22px 14px; }
+    .school-dialog-kicker { margin:0 0 7px; color:var(--lime); font:9px/1.4 "Courier New",monospace; letter-spacing:.14em; }
+    .school-dialog-title { margin:0; color:#eef2f8; font-size:20px; font-weight:600; letter-spacing:-.04em; }
+    .school-dialog-description { margin:6px 0 0; color:#8d97a8; font-size:10px; line-height:1.6; }
+    .school-dialog-close { display:grid; flex:0 0 32px; place-items:center; width:32px; height:32px; border:1px solid var(--line); border-radius:8px; color:#aeb8c7; background:#171c25; font-size:19px; line-height:1; }
+    .school-dialog-close:hover { color:white; background:#202733; }
+    .school-search-wrap { display:flex; align-items:center; gap:10px; margin:0 22px 9px; padding:0 12px; border:1px solid rgba(211,222,240,.12); border-radius:9px; color:var(--lime); background:#0b0f15; }
+    .school-search-wrap:focus-within { border-color:rgba(197,243,107,.5); }
+    .school-search-wrap input { width:100%; min-width:0; height:42px; border:0; outline:0; color:var(--ink); background:transparent; font-size:11px; }
+    .school-search-wrap input::placeholder { color:#697485; }
+    .school-choice-hint { min-height:16px; margin:0 22px 9px; color:#778293; font-size:9px; line-height:1.5; }
+    .school-choice-list { display:grid; align-content:start; gap:6px; min-height:140px; max-height:min(52vh,430px); padding:0 22px 14px; overflow:auto; overscroll-behavior:contain; }
+    .school-option { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:10px 12px; border:1px solid rgba(211,222,240,.08); border-radius:8px; color:#dbe3ef; background:#0c1016; text-align:left; }
+    .school-option:hover,.school-option:focus-visible { border-color:rgba(197,243,107,.35); background:rgba(197,243,107,.055); outline:none; }
+    .school-option-main { min-width:0; } .school-option-name { display:block; overflow:hidden; font-size:11px; font-weight:550; text-overflow:ellipsis; white-space:nowrap; }
+    .school-option-meta { display:block; margin-top:4px; color:#778293; font-size:9px; line-height:1.4; }
+    .school-option-check { flex:0 0 auto; color:var(--lime); font-size:12px; }
+    .school-option-custom { border-color:rgba(197,243,107,.24); background:rgba(197,243,107,.055); }
+    .school-dialog-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 22px 18px; border-top:1px solid rgba(211,222,240,.08); color:#778293; font-size:9px; line-height:1.5; }
+    .school-empty { padding:20px 8px; color:#8490a2; text-align:center; font-size:10px; line-height:1.7; }
     .profile-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .profile-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .profile-avatar { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border: 1px solid rgba(197,243,107,.22); border-radius: 10px; color: var(--lime); background: rgba(197,243,107,.07); }
@@ -219,6 +252,11 @@
       .table-action { padding: 6px 7px; }
       .halls { gap: 8px; }
       .hall { padding: 12px; }
+      .school-dialog { width:calc(100% - 20px); max-height:90svh; border-radius:12px; }
+      .school-dialog-head { padding:18px 16px 12px; }
+      .school-search-wrap,.school-choice-hint { margin-right:16px; margin-left:16px; }
+      .school-choice-list { padding-right:16px; padding-left:16px; }
+      .school-dialog-foot { padding-right:16px; padding-left:16px; }
       .view-head { align-items: flex-start; flex-direction: column; }
       .footer { flex-direction: column; gap: 5px; }
     }
@@ -311,8 +349,14 @@
             <div class="card-heading" style="margin-bottom:0"><div><h2 class="card-title">리그 참가</h2><p class="card-description">카카오 로그인 후 별명과 학교를 등록해 참가하세요.</p></div><span class="tiny-label">FREE</span></div>
             <p class="join-copy" id="join-copy">카카오 로그인 후 별명과 학교를 정하면 가상 계좌가 만들어집니다.</p>
             <form class="join-form" id="join-form">
-              <label class="field">별명<input id="nickname" maxlength="20" placeholder="예: 투자하는 고래" required></label>
-              <label class="field">대학교<input id="school" maxlength="40" placeholder="예: 서울대학교" list="school-options" required><datalist id="school-options"><option>서울대학교</option><option>연세대학교</option><option>고려대학교</option><option>한국과학기술원</option><option>성균관대학교</option><option>한양대학교</option><option>부산대학교</option><option>경북대학교</option></datalist></label>
+              <label class="field">별명<input id="nickname" maxlength="20" placeholder="예: 투자하는 고래" aria-describedby="nickname-check" required><span id="nickname-check" class="nickname-check" aria-live="polite">별명은 전국 리그에서 중복될 수 없어요.</span></label>
+              <label class="field">대학교
+                <div class="school-picker-field">
+                  <input id="school" type="hidden">
+                  <button class="school-picker-button" id="open-school-picker" type="button" aria-haspopup="dialog" aria-controls="school-dialog"><span class="school-picker-label" id="school-picker-label">학교를 찾아 선택하세요</span><span class="school-picker-action">학교 찾기 <span aria-hidden="true">⌕</span></span></button>
+                  <span class="school-picker-help">대학교·전문대·사이버대 모두 참가할 수 있어요. 목록에 없으면 학교명을 검색해 직접 등록하세요.</span>
+                </div>
+              </label>
               <button class="primary" type="submit">₩10,000,000 받고 참가하기</button>
             </form>
             <p class="account-status">공개되는 정보는 게임 별명과 학교입니다. 카카오 실명이나 프로필 이름은 순위에 사용하지 않습니다.</p>
@@ -398,12 +442,22 @@
 
     <footer class="footer"><span>CAMPUS LEAGUE · 모의투자 교육용 프로토타입</span><span>실제 주문·환전 없음 · 예시 시세는 투자 판단에 사용할 수 없습니다.</span></footer>
   </div>
+  <dialog class="school-dialog" id="school-dialog" aria-labelledby="school-dialog-title">
+    <div class="school-dialog-content">
+      <div class="school-dialog-head"><div><p class="school-dialog-kicker">FIND YOUR CAMPUS</p><h2 class="school-dialog-title" id="school-dialog-title">학교 선택</h2><p class="school-dialog-description">학교를 검색해 선택하세요. 목록에 없는 학교도 직접 추가해 참가할 수 있습니다.</p></div><button class="school-dialog-close" id="close-school-dialog" type="button" aria-label="학교 선택창 닫기">×</button></div>
+      <label class="school-search-wrap" for="school-search"><span aria-hidden="true">⌕</span><input id="school-search" type="search" maxlength="80" placeholder="학교명 검색 · 예: 부산대학교" autocomplete="off"></label>
+      <p class="school-choice-hint" id="school-choice-hint" aria-live="polite">목록에서 고르거나, 검색창에 학교 이름을 입력해 직접 추가하세요.</p>
+      <div class="school-choice-list" id="school-choice-list" role="listbox" aria-label="참가 가능한 학교"></div>
+      <div class="school-dialog-foot"><span>학교 소속은 별도로 인증하지 않습니다.</span><button class="secondary" id="cancel-school-picker" type="button">닫기</button></div>
+    </div>
+  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
     (() => {
       const STORAGE_KEY = "campus-league-local-demo-v1";
       const STARTING_CAPITAL = 10000000;
+      const COMMON_SCHOOLS = ["가천대학교","가톨릭대학교","강남대학교","강릉원주대학교","강원대학교","건국대학교","건양대학교","경기대학교","경남대학교","경북대학교","경상국립대학교","경성대학교","경운대학교","경일대학교","경희대학교","계명대학교","고려대학교","공주대학교","광운대학교","광주과학기술원","광주대학교","국민대학교","군산대학교","금오공과대학교","꽃동네대학교","나사렛대학교","남서울대학교","단국대학교","대구가톨릭대학교","대구대학교","대구경북과학기술원","대전대학교","덕성여자대학교","동국대학교","동덕여자대학교","동명대학교","동서대학교","동아대학교","동의대학교","명지대학교","목원대학교","목포대학교","목포해양대학교","배재대학교","백석대학교","부경대학교","부산가톨릭대학교","부산대학교","부산외국어대학교","삼육대학교","상명대학교","서강대학교","서경대학교","서울과학기술대학교","서울교육대학교","서울대학교","서울시립대학교","서울여자대학교","선문대학교","성결대학교","성공회대학교","성균관대학교","성신여자대학교","세명대학교","세종대학교","수원대학교","숙명여자대학교","순천대학교","순천향대학교","숭실대학교","신라대학교","아주대학교","안동대학교","연세대학교","영남대학교","우석대학교","우송대학교","울산대학교","원광대학교","을지대학교","이화여자대학교","인제대학교","인천대학교","인하대학교","전남대학교","전북대학교","제주대학교","조선대학교","중앙대학교","중부대학교","중원대학교","창원대학교","청주대학교","초당대학교","충남대학교","충북대학교","포항공과대학교","한국공학대학교","한국교원대학교","한국교통대학교","한국기술교육대학교","한국외국어대학교","한국항공대학교","한국해양대학교","한경국립대학교","한남대학교","한동대학교","한림대학교","한밭대학교","한서대학교","한성대학교","한세대학교","한양대학교","협성대학교","호남대학교","호서대학교","홍익대학교","경희사이버대학교","고려사이버대학교","글로벌사이버대학교","대구사이버대학교","부산디지털대학교","사이버한국외국어대학교","서울디지털대학교","서울사이버대학교","세종사이버대학교","숭실사이버대학교","원광디지털대학교","한국방송통신대학교","한양사이버대학교","경기과학기술대학교","경남정보대학교","대구공업대학교","대전보건대학교","동양미래대학교","명지전문대학","배화여자대학교","부산경상대학교","부산여자대학교","삼육보건대학교","서울예술대학교","서일대학교","숭의여자대학교","영남이공대학교","영진전문대학교","인덕대학교","인하공업전문대학","한국폴리텍대학교","한양여자대학교","한국예술종합학교"];
       const QUOTE_WORKER_URL = "https://campus-league-krx-feed.sdm3894.workers.dev";
       const DEFAULT_STOCK_SYMBOLS = new Set(["005930","000660","035420","005380","AAPL","NVDA","MSFT","TSLA"]);
       const stockCatalog = { KR:null, US:null };
@@ -427,6 +481,8 @@
       let toastTimer = 0;
       let stockSearchTimer = 0;
       let stockSearchGeneration = 0;
+      let nicknameCheckTimer = 0;
+      let nicknameCheckRequest = 0;
       let remoteClient = null, remoteMode = false, remoteSummary = null, authUser = null, authGateMessage = "";
       let fxFreshness = "demo", fxTradable = false;
 
@@ -638,6 +694,66 @@
       function allQuotesHaveData() { return assets.every(a => a.freshness !== "demo") && fxFreshness !== "demo"; }
       function allQuotesAreRealtime() { return assets.every(a => a.freshness === "real_time") && fxFreshness === "real_time"; }
       function escapeHTML(text) { return String(text).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+      function normalizeSchoolName(name) { return String(name || "").trim().toLocaleLowerCase("ko-KR"); }
+      function getSchoolChoices() {
+        const liveSchools = remoteSummary && Array.isArray(remoteSummary.schools) ? remoteSummary.schools.map(item => item.school) : [];
+        const choices = new Map();
+        [...COMMON_SCHOOLS, ...liveSchools].forEach(name => {
+          const clean = String(name || "").trim();
+          if (clean.length >= 2) choices.set(normalizeSchoolName(clean), clean);
+        });
+        return Array.from(choices.values()).sort((a,b) => a.localeCompare(b, "ko"));
+      }
+      function renderSchoolChoices() {
+        const input = document.getElementById("school-search"), list = document.getElementById("school-choice-list"), hint = document.getElementById("school-choice-hint");
+        const query = input.value.trim(), normalizedQuery = normalizeSchoolName(query), choices = getSchoolChoices();
+        const exactMatch = choices.some(name => normalizeSchoolName(name) === normalizedQuery);
+        const matches = normalizedQuery ? choices.filter(name => normalizeSchoolName(name).includes(normalizedQuery)) : choices;
+        const visible = matches.slice(0,80);
+        let markup = "";
+        if (query.length >= 2 && query.length <= 80 && !exactMatch) markup += '<button class="school-option school-option-custom" type="button" role="option" data-school-choice="' + escapeHTML(query) + '"><span class="school-option-main"><span class="school-option-name">“' + escapeHTML(query) + '” 직접 등록</span><span class="school-option-meta">목록에 없어도 이 이름으로 학교를 만들고 참가할 수 있어요.</span></span><span class="school-option-check" aria-hidden="true">＋</span></button>';
+        if (visible.length) markup += visible.map(name => '<button class="school-option" type="button" role="option" data-school-choice="' + escapeHTML(name) + '"><span class="school-option-main"><span class="school-option-name">' + escapeHTML(name) + '</span><span class="school-option-meta">학교 선택</span></span><span class="school-option-check" aria-hidden="true">›</span></button>').join("");
+        if (!markup) markup = '<div class="school-empty">검색 결과가 없어요.<br>학교 이름을 2~80자로 입력하면 직접 등록할 수 있습니다.</div>';
+        list.innerHTML = markup;
+        hint.textContent = matches.length > visible.length ? "검색 결과가 많아요. 학교 이름을 더 입력해 좁혀보세요." : !query ? "대학교·전문대·사이버대 추천 목록과 이미 참가한 학교를 보여줍니다." : exactMatch ? "목록에서 학교를 선택하세요. 다른 학교 이름도 직접 추가할 수 있습니다." : "목록에 없는 학교도 직접 등록할 수 있습니다.";
+      }
+      function openSchoolPicker() {
+        const dialog = document.getElementById("school-dialog"), input = document.getElementById("school-search");
+        if (!dialog.open) { input.value = ""; renderSchoolChoices(); dialog.showModal(); }
+        window.setTimeout(() => input.focus(), 0);
+      }
+      function chooseSchool(name) {
+        const clean = String(name || "").trim();
+        if (clean.length < 2 || clean.length > 80) { toast("학교 이름은 2~80자로 입력해주세요."); return; }
+        document.getElementById("school").value = clean;
+        document.getElementById("school-picker-label").textContent = clean;
+        document.getElementById("open-school-picker").classList.add("has-value");
+        document.getElementById("school-dialog").close();
+      }
+      function setNicknameCheck(message, stateName) {
+        const node = document.getElementById("nickname-check");
+        if (!node) return;
+        node.textContent = message;
+        node.className = "nickname-check" + (stateName ? " " + stateName : "");
+      }
+      async function checkNicknameAvailability(value) {
+        const nickname = String(value || "").trim(), requestId = ++nicknameCheckRequest;
+        if (nickname.length < 1 || nickname.length > 20) { setNicknameCheck("별명은 1~20자로 입력해주세요.", "error"); return false; }
+        if (!remoteClient || !remoteMode) { setNicknameCheck("온라인 리그 연결 후 중복 여부를 확인합니다.", "pending"); return false; }
+        setNicknameCheck("별명 중복 확인 중…", "pending");
+        try {
+          const { data, error } = await remoteClient.rpc("is_campus_nickname_available", { p_nickname:nickname });
+          if (error) throw error;
+          if (requestId !== nicknameCheckRequest) return false;
+          const available = data === true;
+          setNicknameCheck(available ? "사용할 수 있는 별명입니다." : "이미 사용 중인 별명입니다. 다른 별명을 입력해주세요.", available ? "available" : "taken");
+          return available;
+        } catch (_) {
+          if (requestId === nicknameCheckRequest) setNicknameCheck("중복 확인에 실패했어요. Supabase의 최신 SQL을 적용했는지 확인해주세요.", "error");
+          return false;
+        }
+      }
       function toast(message) {
         const node = document.getElementById("toast");
         node.textContent = message;
@@ -945,13 +1061,42 @@
         renderTradePanel();
       }));
       document.getElementById("order-quantity").addEventListener("input", renderTradePanel);
+
+      const nicknameInput = document.getElementById("nickname"), schoolDialog = document.getElementById("school-dialog");
+      document.getElementById("open-school-picker").addEventListener("click", openSchoolPicker);
+      document.getElementById("close-school-dialog").addEventListener("click", () => schoolDialog.close());
+      document.getElementById("cancel-school-picker").addEventListener("click", () => schoolDialog.close());
+      document.getElementById("school-search").addEventListener("input", renderSchoolChoices);
+      document.getElementById("school-choice-list").addEventListener("click", event => {
+        const option = event.target.closest("[data-school-choice]");
+        if (option) chooseSchool(option.dataset.schoolChoice);
+      });
+      schoolDialog.addEventListener("click", event => { if (event.target === schoolDialog) schoolDialog.close(); });
+      nicknameInput.addEventListener("input", () => {
+        window.clearTimeout(nicknameCheckTimer); nicknameCheckRequest++;
+        const value = nicknameInput.value.trim();
+        if (!value) { setNicknameCheck("별명은 전국 리그에서 중복될 수 없어요.", ""); return; }
+        if (value.length > 20) { setNicknameCheck("별명은 1~20자로 입력해주세요.", "error"); return; }
+        setNicknameCheck("별명 중복 확인 중…", "pending");
+        nicknameCheckTimer = window.setTimeout(() => checkNicknameAvailability(value), 450);
+      });
+      nicknameInput.addEventListener("blur", () => {
+        window.clearTimeout(nicknameCheckTimer);
+        const value = nicknameInput.value.trim();
+        if (value.length >= 1 && value.length <= 20) checkNicknameAvailability(value);
+      });
       document.getElementById("join-form").addEventListener("submit", async event => {
         event.preventDefault();
         const nickname = document.getElementById("nickname").value.trim();
         const school = document.getElementById("school").value.trim();
-        if (!nickname || !school) return;
+        if (!nickname) { nicknameInput.focus(); return; }
+        if (nickname.length > 20) { setNicknameCheck("별명은 1~20자로 입력해주세요.", "error"); nicknameInput.focus(); return; }
+        if (school.length < 2 || school.length > 80) { toast("참가할 학교를 찾아 선택해주세요."); openSchoolPicker(); return; }
         if (remoteMode && remoteClient) {
           try {
+            window.clearTimeout(nicknameCheckTimer);
+            const available = await checkNicknameAvailability(nickname);
+            if (!available) { toast(document.getElementById("nickname-check").textContent || "이미 사용 중인 별명입니다."); nicknameInput.focus(); return; }
             const { data,error } = await remoteClient.auth.getSession();
             if (error) throw error;
             const user = data && data.session ? data.session.user : null;
@@ -967,7 +1112,7 @@
             return;
           }
         }
-        state.profile = { nickname:nickname.slice(0,20), school:school.slice(0,40) };
+        state.profile = { nickname:nickname.slice(0,20), school:school.slice(0,80) };
         state.joinedAt = new Date().toISOString();
         state.wallet = { krw:STARTING_CAPITAL, usd:0 };
         saveState();
@@ -986,7 +1131,7 @@
         if (nickname === null || !nickname.trim()) return;
         const school = window.prompt("대학교 이름을 수정하세요.", state.profile.school);
         if (school === null || !school.trim()) return;
-        state.profile = { nickname:nickname.trim().slice(0,20), school:school.trim().slice(0,40) };
+        state.profile = { nickname:nickname.trim().slice(0,20), school:school.trim().slice(0,80) };
         saveState(); render(); toast("데모 참가 정보가 수정됐어요.");
       });
       document.getElementById("exchange-form").addEventListener("submit", async event => {
