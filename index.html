@@ -266,7 +266,7 @@
             </div>
             <div style="overflow-x:auto">
               <table class="market-table">
-                <thead><tr><th>종목</th><th class="price-heading">예시 가격</th><th>변동률</th><th>시장</th><th></th></tr></thead>
+                <thead><tr><th>종목</th><th class="price-heading">시세</th><th>변동률</th><th>시장</th><th></th></tr></thead>
                 <tbody id="market-rows"></tbody>
               </table>
             </div>
@@ -334,8 +334,8 @@
       </section>
       <div class="layout">
         <section class="card">
-          <div class="card-heading"><div><h2 class="card-title">종목 목록</h2><p class="card-description">현재 가격은 예시값이며 실제 호가와 다릅니다.</p></div><div class="market-tabs"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div></div>
-          <div style="overflow-x:auto"><table class="market-table"><thead><tr><th>종목</th><th class="price-heading">예시 가격</th><th>변동률</th><th>시장</th><th></th></tr></thead><tbody id="market-rows-secondary"></tbody></table></div>
+          <div class="card-heading"><div><h2 class="card-title">종목 목록</h2><p class="card-description">검색한 종목의 KIS 조회 시세입니다. 매수·매도는 게임 속 가상 계좌에서만 처리됩니다.</p></div><div class="market-tabs"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div></div>
+          <div style="overflow-x:auto"><table class="market-table"><thead><tr><th>종목</th><th class="price-heading">시세</th><th>변동률</th><th>시장</th><th></th></tr></thead><tbody id="market-rows-secondary"></tbody></table></div>
         </section>
         <aside class="card trade-panel">
           <div class="card-heading"><div><h2 class="card-title">주문하기</h2><p class="card-description">보유 현금 내에서만 거래됩니다.</p></div><span class="tiny-label">PAPER ORDER</span></div>
@@ -508,14 +508,14 @@
             '<article class="stock-result"><div style="min-width:0"><div class="stock-result-name">' + escapeHTML(item.name) + '</div><div class="stock-result-meta">' +
             escapeHTML(item.exchange_name) + ' · ' + escapeHTML(item.symbol) + (item.english_name ? ' · ' + escapeHTML(item.english_name) : '') +
             '</div></div><button class="stock-result-action" type="button" data-quote-symbol="' + escapeHTML(item.symbol) + '" data-quote-market="' + escapeHTML(item.market) +
-            '" data-quote-exchange="' + escapeHTML(item.exchange) + '" data-quote-name="' + escapeHTML(item.name) + '">KIS 가격 조회</button></article>'
+            '" data-quote-exchange="' + escapeHTML(item.exchange) + '" data-quote-exchange-name="' + escapeHTML(item.exchange_name) + '" data-quote-name="' + escapeHTML(item.name) + '">KIS 가격 조회</button></article>'
           ).join("");
           results.querySelectorAll("[data-quote-symbol]").forEach(button => button.addEventListener("click", () => {
             lookupSearchQuote({
               symbol:button.dataset.quoteSymbol,
               market:button.dataset.quoteMarket,
               exchange:button.dataset.quoteExchange,
-              exchange_name:button.parentElement.querySelector(".stock-result-meta").textContent.split(" · ")[0],
+              exchange_name:button.dataset.quoteExchangeName,
               name:button.dataset.quoteName,
             }, button);
           }));
@@ -998,6 +998,7 @@
         state.profile = { nickname:data.profile.nickname, school:data.profile.school };
         state.wallet = { krw:Number(data.wallet.cash_krw), usd:Number(data.wallet.cash_usd) };
         state.trades = (data.trades || []).map(t => ({ symbol:t.symbol, side:t.side, quantity:Number(t.quantity), price:Number(t.price), currency:t.currency, at:t.created_at })).reverse();
+        syncRemoteQuoteAssets();
         USDKRW = Number(data.fx_krw || USDKRW);
         remoteMode = true;
         saveState();
