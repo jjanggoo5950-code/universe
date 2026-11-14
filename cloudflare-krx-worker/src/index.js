@@ -135,6 +135,7 @@ export class KisCollector {
         realtime_kr_symbols: KRX_SYMBOLS,
         daily_snapshot_symbols: SNAPSHOT_ASSETS.map((asset) => asset.symbol),
         fx_symbol: FX_SYMBOL,
+        fx_source_version: "fx-daily-fallback-v3",
         last_fx_at: this.lastFxAt || savedFxStatus?.at || null,
         last_fx_error: this.lastFxError ?? savedFxStatus?.error ?? null,
         last_tick_at: this.lastTickAt,
@@ -502,11 +503,14 @@ export class KisCollector {
         freshness = "end_of_day";
       }
       if (!parsed?.price) {
-        const keys = Array.from(new Set([
-          ...Object.keys(parsed?.output || {}),
-          ...Object.keys(parsed?.latest || {}),
-        ])).slice(0, 12).join(",");
-        throw new Error("kis_fx_price_missing_" + (keys || currentError || "empty_output"));
+        const diagnostic = {
+          out_price: parsed?.output?.ovrs_nmix_prpr ?? null,
+          row_price: parsed?.latest?.ovrs_nmix_prpr ?? null,
+          out_close: parsed?.output?.ovrs_nmix_prdy_clpr ?? null,
+          row_close: parsed?.latest?.ovrs_nmix_prdy_clpr ?? null,
+          msg_cd: body?.msg_cd ?? null,
+        };
+        throw new Error("kis_fx_daily_price_missing_" + JSON.stringify(diagnostic) + (currentError ? "_" + currentError : ""));
       }
 
       const { output, latest, price } = parsed;
@@ -751,7 +755,7 @@ export class KisCollector {
   safeError(error) {
     const message = String(error?.message || "collector_error");
     // Do not return response bodies, request headers, or credential values in logs/status.
-    return message.slice(0, 120);
+    return message.slice(0, 280);
   }
 }
 
