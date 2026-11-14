@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="campus-release" content="20261115-resilience-v2">
+  <meta name="campus-release" content="20261115-mobile-layout">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090b10">
   <meta name="description" content="한국·미국 주식으로 겨루는 대학생 모의투자 리그. 1,000만원으로 시작해 학교와 개인의 수익률을 쌓아보세요.">
@@ -57,7 +57,7 @@
     .notice { display: flex; align-items: flex-start; gap: 11px; margin: 6px 0 22px; padding: 13px 15px; border: 1px solid rgba(240,200,110,.2); border-radius: 10px; color: #cabd98; background: rgba(240,200,110,.045); font-size: 11px; line-height: 1.6; }
     .notice-icon { color: var(--gold); font: 14px/1.4 "Courier New", monospace; }
     .notice strong { color: #ebdcae; font-weight: 600; }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
     .stat, .card { border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(150deg, rgba(255,255,255,.035), transparent 70%), var(--panel); }
     .stat { min-height: 108px; padding: 16px 18px; }
     .stat-label { color: #8994a4; font: 9px/1.4 "Courier New", monospace; letter-spacing: .1em; }
@@ -67,7 +67,13 @@
     .negative { color: var(--red) !important; }
     .muted { color: var(--muted) !important; }
     .layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(290px, .8fr); gap: 15px; align-items: start; }
-    .stack { display: grid; gap: 15px; }
+    .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 15px; }
+    .layout > *, .stack > *, .subgrid > *, .stats > *, .halls > *, .currency-panel > * { min-width: 0; }
+    .card, .join-card { width: 100%; min-width: 0; }
+    .table-scroll { width: 100%; min-width: 0; overflow-x: auto; }
+    .card-heading > div, .trade-symbol > div { min-width: 0; }
+    .profile-school, .trade-price, .holding-name { overflow-wrap: anywhere; }
+    .trade-big-badge { flex-shrink: 0; }
     .card { padding: 18px; }
     .card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 16px; }
     .card-title { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: -.01em; }
@@ -93,15 +99,15 @@
     .market-table td:first-child { padding-left: 0; text-align: left; }
     .asset { display: flex; align-items: center; gap: 9px; min-width: 130px; }
     .asset-badge { display: grid; flex: 0 0 27px; place-items: center; width: 27px; height: 27px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; color: #e6edfa; background: #202733; font: 700 8px/1 "Courier New", monospace; }
-    .asset-name { color: #e9eef6; font-size: 11px; font-weight: 550; }
-    .asset-meta { margin-top: 3px; color: #778293; font: 8px/1 "Courier New", monospace; }
+    .asset-name { display: block; color: #e9eef6; font-size: 11px; font-weight: 550; }
+    .asset-meta { display: block; margin-top: 3px; color: #778293; font: 8px/1 "Courier New", monospace; }
     .quote-price { color: #e7ecf3 !important; font-variant-numeric: tabular-nums; }
     .quote-context { display: block; margin-top: 4px; color: #8290a3; font: 8px/1.25 "Courier New", monospace; }
     .table-action { padding: 6px 9px; border: 1px solid rgba(197,243,107,.24); border-radius: 6px; color: var(--lime); background: rgba(197,243,107,.06); font-size: 9px; }
     .table-action:hover { background: rgba(197,243,107,.13); }
-    .currency-panel { display: grid; grid-template-columns: 1fr 26px 1fr; align-items: end; gap: 10px; padding: 14px; border: 1px solid rgba(211,222,240,.08); border-radius: 10px; background: #0c1016; }
+    .currency-panel { display: grid; grid-template-columns: minmax(0,1fr) 20px minmax(0,1fr); align-items: end; gap: 8px; padding: 14px; border: 1px solid rgba(211,222,240,.08); border-radius: 10px; background: #0c1016; }
     .currency-label { margin-bottom: 8px; color: #7f8998; font: 8px/1.3 "Courier New", monospace; letter-spacing: .09em; }
-    .currency-amount { color: #edf2f8; font: 17px/1.2 "Courier New", monospace; }
+    .currency-amount { color: #edf2f8; font: 17px/1.4 "Courier New", monospace; overflow-wrap: anywhere; }
     .currency-unit { margin-top: 4px; color: #7f8998; font: 9px/1.3 "Courier New", monospace; }
     .swap { align-self: center; color: var(--lime); text-align: center; font-size: 14px; }
     .fx-rate { margin: 12px 0; color: #9da7b7; font: 10px/1.5 "Courier New", monospace; }
@@ -126,7 +132,7 @@
     .empty { padding: 23px 6px; color: #778293; text-align: center; font-size: 10px; line-height: 1.6; }
     .fx-foot, .footnote { color: #717c8d; font-size: 9px; line-height: 1.6; }
     .fx-foot { margin: 10px 0 0; }
-    .halls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .halls { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
     .hall { padding: 15px; border: 1px solid var(--line); border-radius: 10px; background: #0c1016; }
     .hall-kicker { margin: 0; color: #a0aaba; font: 8px/1.4 "Courier New", monospace; letter-spacing: .11em; }
     .hall-avatar { display: grid; place-items: center; width: 34px; height: 34px; margin: 14px 0 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 50%; color: #d4e8a3; background: rgba(197,243,107,.08); font-size: 13px; }
@@ -200,7 +206,7 @@
     .view-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin: 26px 0 16px; }
     .view-head h2 { margin: 0; font-size: 22px; font-weight: 550; letter-spacing: -.04em; }
     .view-head p { margin: 6px 0 0; color: #8b96a6; font-size: 10px; }
-    .subgrid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 15px; }
+    .subgrid { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,.9fr); gap: 15px; }
     .portfolio-total { margin: 7px 0 6px; font-size: 29px; font-weight: 550; letter-spacing: -.05em; }
     .portfolio-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; color: #8994a4; font: 9px/1.5 "Courier New", monospace; }
     .portfolio-meta strong { color: #dce4ef; font-weight: 500; }
@@ -230,9 +236,9 @@
       .topbar { flex-wrap: wrap; padding: 14px 0; }
       .nav { order: 3; width: 100%; overflow-x: auto; }
       .nav button { flex: 1 0 auto; }
-      .layout { grid-template-columns: 1fr; }
-      .trade-panel { position: static; }
-      .right-column { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+      .layout, .right-column, .subgrid { grid-template-columns: minmax(0,1fr); }
+      .trade-panel, #market-view .trade-panel { position: static; }
+      .stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
     }
     @media (max-width: 640px) {
       .shell { width: calc(100% - 24px); }
@@ -241,16 +247,41 @@
       .season-chip { display: none; }
       .hero { display: block; padding: 34px 0 20px; }
       .hero-aside { margin-top: 18px; padding: 9px 12px; }
-      .stats { grid-template-columns: 1fr 1fr; gap: 8px; }
-      .stat { min-height: 96px; padding: 13px; }
-      .stat-value { font-size: 20px; }
-      .card { padding: 14px; }
-      .right-column, .subgrid { grid-template-columns: 1fr; }
-      .stock-search { grid-template-columns: 1fr; }
-      .market-table th, .market-table td { padding-left: 5px; padding-right: 5px; }
-      .market-table th:nth-child(3), .market-table td:nth-child(3) { display: none; }
-      .asset { min-width: 113px; }
-      .table-action { padding: 6px 7px; }
+      .layout, .stack, .subgrid { gap: 12px; }
+      .stats { gap: 8px; grid-auto-rows: 1fr; margin-bottom: 12px; }
+      .stat { min-height: 112px; padding: 12px; }
+      .stat-value { font-size: clamp(17px,4.7vw,22px); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+      #stat-school { font-size: 17px !important; line-height: 1.4; }
+      .card, .join-card { padding: 14px; border-radius: 12px; }
+      .card-heading { flex-wrap: wrap; gap: 10px; }
+      .card-heading > div:first-child { flex: 1 1 170px; }
+      .card-heading .market-tabs { flex: 0 0 auto; }
+      .stock-search { grid-template-columns: minmax(0,1fr); }
+      .market-table, .market-table tbody { display: block; }
+      .market-table thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      .market-table tr { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 10px 8px; padding: 14px 0; border-top: 1px solid var(--line); }
+      .market-table td { display: block; min-width: 0; border: 0; padding: 0; white-space: normal; }
+      .market-table td:first-child { grid-column: 1 / 3; grid-row: 1; }
+      .market-table td:nth-child(2) { grid-column: 1; grid-row: 2; text-align: left; }
+      .market-table td:nth-child(3) { grid-column: 2; grid-row: 2; }
+      .market-table td:nth-child(4) { grid-column: 3; grid-row: 1; color: var(--muted); font-size: 10px; }
+      .market-table td:nth-child(5) { grid-column: 3; grid-row: 2; }
+      .asset { min-width: 0; }
+      .asset > span:last-child { min-width: 0; }
+      .asset-name { overflow-wrap: anywhere; }
+      .quote-context { max-width: 100%; overflow-wrap: anywhere; }
+      .table-action { min-height: 40px; padding: 9px 12px; }
+      .profile-card { flex-direction: column; align-items: stretch; }
+      .profile-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .currency-panel { padding: 12px; gap: 6px; grid-template-columns: minmax(0,1fr) 16px minmax(0,1fr); }
+      .currency-amount { font-size: clamp(13px,3.7vw,17px); }
+      .exchange-form { display: grid; grid-template-columns: minmax(0,1fr) auto; }
+      .exchange-form input, .field input, .field select, .stock-search input, .stock-search select, .school-search-wrap input { min-height: 44px; font-size: 16px; }
+      .primary, .secondary, .market-tabs button, .segmented button { min-height: 40px; }
+      .history { min-width: 480px; }
+      .leader-row { gap: 8px; grid-template-columns: 20px minmax(0,1fr) auto; }
+      .leader-profit { font-size: 10px; }
+      .notice { flex-wrap: wrap; }
       .halls { gap: 8px; }
       .hall { padding: 12px; }
       .school-dialog { width:calc(100% - 20px); max-height:90svh; border-radius:12px; }
@@ -274,8 +305,8 @@
     .holding { grid-template-columns:minmax(0,1fr) auto; }
     button:disabled { opacity:.5; cursor:not-allowed; }
     button:focus-visible, input:focus-visible { outline:2px solid var(--lime); outline-offset:3px; }
-    #market-view .trade-panel { position:sticky; top:16px; align-self:start; }
-    @media(max-width:700px) { #market-view .trade-panel { position:static; } .top-actions { display:none; } .nav { overflow-x:auto; } }
+    #market-view .trade-panel { top:16px; align-self:start; }
+    @media(max-width:700px) { .top-actions { display:none; } .nav { overflow-x:auto; } }
   </style>
 </head>
 <body>
@@ -336,7 +367,7 @@
               <div><h2 class="card-title">주식 마켓</h2><p class="card-description"><button class="secondary" data-go="market" type="button">전체 종목 검색 →</button></p></div>
               <div class="market-tabs" aria-label="시장 선택"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div>
             </div>
-            <div style="overflow-x:auto">
+            <div class="table-scroll">
               <table class="market-table">
                 <thead><tr><th>종목</th><th class="price-heading">시세</th><th>변동률</th><th>시장</th><th></th></tr></thead>
                 <tbody id="market-rows"></tbody>
@@ -413,7 +444,7 @@
       <div class="layout">
         <section class="card">
           <div class="card-heading"><div><h2 class="card-title">종목 목록</h2><p class="card-description">관심 종목과 보유 종목의 가격을 확인하세요.</p></div><div class="market-tabs"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div></div>
-          <div style="overflow-x:auto"><table class="market-table"><thead><tr><th>종목</th><th class="price-heading">시세</th><th>변동률</th><th>시장</th><th></th></tr></thead><tbody id="market-rows-secondary"></tbody></table></div>
+          <div class="table-scroll"><table class="market-table"><thead><tr><th>종목</th><th class="price-heading">시세</th><th>변동률</th><th>시장</th><th></th></tr></thead><tbody id="market-rows-secondary"></tbody></table></div>
         </section>
         <aside class="card trade-panel">
           <div class="card-heading"><div><h2 class="card-title">주문하기</h2><p class="card-description">보유 현금 내에서만 거래됩니다.</p></div></div>
@@ -440,7 +471,7 @@
       </div>
       <section class="card" style="margin-top:15px">
         <div class="card-heading"><div><h2 class="card-title">최근 거래</h2><p class="card-description">가상 거래 내역</p></div></div>
-        <div style="overflow-x:auto"><table class="history"><thead><tr><th>날짜</th><th>구분</th><th>종목</th><th>수량</th><th>체결가</th><th>합계</th></tr></thead><tbody id="history-rows"></tbody></table></div>
+        <div class="table-scroll"><table class="history"><thead><tr><th>날짜</th><th>구분</th><th>종목</th><th>수량</th><th>체결가</th><th>합계</th></tr></thead><tbody id="history-rows"></tbody></table></div>
       </section>
     </section>
 
