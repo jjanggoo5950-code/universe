@@ -77,14 +77,32 @@ export class KisCollector {
     // This route is reached only through the Worker binding, never from a public route.
     if (path === "/ensure" && request.method === "POST") {
       try {
-        await this.ensureConnected();
         await this.refreshDailySnapshotsIfDue();
-        return Response.json({ status: this.status });
+      } catch (error) {
+        this.lastSnapshotError = this.safeError(error);
+        await this.ctx.storage.put("dailySnapshotStatus", {
+          at: new Date().toISOString(),
+          error: this.lastSnapshotError,
+        });
+      }
+
+      try {
+        await this.ensureConnected();
+        return Response.json({
+          status: this.status,
+          last_snapshot_at: this.lastSnapshotAt,
+          last_snapshot_error: this.lastSnapshotError,
+        });
       } catch (error) {
         this.status = "error";
         this.lastError = this.safeError(error);
         await this.scheduleReconnect();
-        return Response.json({ status: this.status, error: this.lastError }, { status: 503 });
+        return Response.json({
+          status: this.status,
+          error: this.lastError,
+          last_snapshot_at: this.lastSnapshotAt,
+          last_snapshot_error: this.lastSnapshotError,
+        }, { status: 503 });
       }
     }
 
@@ -93,8 +111,17 @@ export class KisCollector {
 
   async alarm() {
     try {
-      await this.ensureConnected();
       await this.refreshDailySnapshotsIfDue();
+    } catch (error) {
+      this.lastSnapshotError = this.safeError(error);
+      await this.ctx.storage.put("dailySnapshotStatus", {
+        at: new Date().toISOString(),
+        error: this.lastSnapshotError,
+      });
+    }
+
+    try {
+      await this.ensureConnected();
     } catch (error) {
       this.status = "error";
       this.lastError = this.safeError(error);
