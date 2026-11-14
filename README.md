@@ -14,16 +14,18 @@
 - 개인 최고 수익률·최저 수익률 기록
 - 작은 화면에서도 쓸 수 있는 대시보드
 
-## 미리보기
+## 계정과 데이터
 
-현재 예시 시세를 사용하는 데모가 기본 화면입니다. 브라우저에서 만든 계좌와 거래는 해당 브라우저에만 저장됩니다. 실제 가격 또는 다른 사람과 공유되는 순위로 오해하지 않도록 화면에서 데모 모드임을 표시합니다.
+참가와 거래에는 카카오 로그인이 필요합니다. 온라인 포트폴리오와 순위는 Supabase에 저장되어 다른 브라우저에서도 같은 카카오 계정으로 불러올 수 있습니다. 공개 순위에는 사용자가 입력한 게임 별명과 학교만 표시하며 카카오 실명이나 프로필명은 표시하지 않습니다.
 
 ## 온라인 리그 준비
 
-1. Supabase SQL Editor에서 campus_league_setup.sql을 실행합니다.
-2. Supabase Authentication에서 익명 로그인을 활성화하고 Cloudflare Turnstile CAPTCHA를 설정합니다.
-3. Cloudflare Workers Builds로 cloudflare-krx-worker 폴더를 배포하고, KIS 및 Supabase secret을 Worker 설정에 등록합니다.
-4. 종목 검색은 KIS 마스터 목록에서 찾고, 선택한 종목의 가격만 Worker가 KIS 조회 API로 가져옵니다. 장외 최근 종가는 참고용이라 주문이 잠깁니다. 모든 주문은 Supabase 모의 계좌에서만 처리되며 실제 증권 주문 API를 호출하지 않습니다. USD/KRW 환율 연결은 별도 설정입니다.
+1. 이 저장소의 `campus_league_setup.sql`을 Supabase SQL Editor에서 실행합니다.
+2. Kakao Developers에서 카카오 로그인을 켜고 앱을 만듭니다. Supabase의 Kakao 제공자에 REST API 키와 Client Secret을 등록하고, Supabase 콜백 URL을 Kakao에 등록합니다.
+3. Supabase Auth의 Kakao 제공자와 사이트 URL을 설정합니다. 이전 익명 참가 기록 연결을 위해 수동 계정 연결을 켜고, Anonymous sign-ins는 끕니다. 변경된 SQL 파일도 다시 실행해 카카오 계정만 참가·매매할 수 있게 합니다.
+4. Cloudflare Worker에 KIS 및 Supabase 서버 비밀키를 등록합니다. 종목 검색은 KIS 목록을 사용하고 선택한 종목 가격만 조회합니다. 주문은 가상 계좌에만 반영하며 증권 주문 API를 호출하지 않습니다.
+
+USD/KRW 환율 피드는 별도 설정입니다. 자세한 Kakao/Supabase 설정과 기존 참가자 데이터 이전은 `캠퍼스리그_설정안내.md`를 참고하세요. 비밀 키나 service_role 키는 HTML, GitHub, 브라우저 코드 또는 채팅에 올리지 마세요.
 
 자세한 안내는 캠퍼스리그_설정안내.md와 cloudflare-krx-worker/README.md를 참고하세요. 비밀 키나 service_role 키는 HTML, GitHub, 브라우저 코드에 넣지 마세요.
 
