@@ -6,8 +6,10 @@
 
 - 참가자마다 ₩10,000,000의 가상자금으로 시작
 - 원화·달러 지갑과 USD/KRW 환전
-- 한국·미국 주식 매수·매도 연습 및 장외 최근 종가 표시
-- Cloudflare Worker의 KRX 실시간 시세와 국내·미국 최근 일봉 수집
+- KIS 종목 목록에서 한국 약 2,878개·미국 약 6,586개 상장 주식을 이름이나 티커로 검색
+- 선택한 종목의 KIS 현재가를 조회하고, 장외에는 최근 종가 표시
+- 가상 현금과 보유 수량만 바꾸는 모의 매수·매도 (증권 주문 API는 호출하지 않음)
+- Cloudflare Worker의 기본 KRX 실시간 시세와 국내·미국 최근 일봉 수집
 - 학교별 수익금 합계와 참가자 평균 수익률
 - 개인 최고 수익률·최저 수익률 기록
 - 작은 화면에서도 쓸 수 있는 대시보드
@@ -21,7 +23,7 @@
 1. Supabase SQL Editor에서 campus_league_setup.sql을 실행합니다.
 2. Supabase Authentication에서 익명 로그인을 활성화하고 Cloudflare Turnstile CAPTCHA를 설정합니다.
 3. Cloudflare Workers Builds로 cloudflare-krx-worker 폴더를 배포하고, KIS 및 Supabase secret을 Worker 설정에 등록합니다.
-4. 미국 주식은 KIS 최근 일봉 참고 가격을 표시하고 주문을 잠급니다. USD/KRW 실시간 환율과 미국 주식 실시간 시세는 별도 연결이 필요합니다.
+4. 종목 검색은 KIS 마스터 목록에서 찾고, 선택한 종목의 가격만 Worker가 KIS 조회 API로 가져옵니다. 장외 최근 종가는 참고용이라 주문이 잠깁니다. 모든 주문은 Supabase 모의 계좌에서만 처리되며 실제 증권 주문 API를 호출하지 않습니다. USD/KRW 환율 연결은 별도 설정입니다.
 
 자세한 안내는 캠퍼스리그_설정안내.md와 cloudflare-krx-worker/README.md를 참고하세요. 비밀 키나 service_role 키는 HTML, GitHub, 브라우저 코드에 넣지 마세요.
 
