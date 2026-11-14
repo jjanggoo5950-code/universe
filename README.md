@@ -1,12 +1,16 @@
 # Orbiting Code — ASCII Solar System
 
-작은 글자와 점, 빛으로 그린 움직이는 태양계입니다.
+작은 글자와 점, 빛으로 그린 움직이는 태양계입니다. 방문자의 방명록 글은 행성이 되고, 하나씩 모여 은하를 만듭니다.
 
 ## 웹에서 보기
 
 <https://jjanggoo5950-code.github.io/universe/>
 
 `main` 브랜치에 변경 사항을 올리면 GitHub Actions가 페이지를 다시 배포합니다.
+
+## 익명 방명록 설정
+
+방명록은 Supabase 데이터베이스와 Cloudflare Turnstile 봇 방지를 사용합니다. Supabase에서 익명 로그인을 켜고 SQL 정책을 적용한 뒤 CAPTCHA를 설정해야 글을 저장할 수 있습니다. 순서는 [방명록 설정 안내](방명록_설정_안내.md)를 참고하세요.
 
 ## Python 터미널 애니메이션
 
