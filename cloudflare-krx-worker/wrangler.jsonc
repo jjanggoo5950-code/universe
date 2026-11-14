@@ -10,10 +10,12 @@
   "durable_objects": {
     "bindings": [
       { "name": "KIS_COLLECTOR", "class_name": "KisCollector" }
-    ]
+    ],
+    "code_update_strategy": {
+      "mode": "immediate"
+    }
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["KisCollector"] }
   ]
 }
-
