@@ -135,7 +135,7 @@ export class KisCollector {
         realtime_kr_symbols: KRX_SYMBOLS,
         daily_snapshot_symbols: SNAPSHOT_ASSETS.map((asset) => asset.symbol),
         fx_symbol: FX_SYMBOL,
-        fx_source_version: "fx-daily-fallback-v3",
+        fx_source_version: "fx-daily-fallback-v4",
         last_fx_at: this.lastFxAt || savedFxStatus?.at || null,
         last_fx_error: this.lastFxError ?? savedFxStatus?.error ?? null,
         last_tick_at: this.lastTickAt,
@@ -497,8 +497,12 @@ export class KisCollector {
 
       if (!parsed?.price) {
         await new Promise((resolve) => setTimeout(resolve, 1_200));
-        const endDate = new Date(now).toISOString().slice(0, 10).replaceAll("-", "");
-        const startDate = new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replaceAll("-", "");
+        const kstNow = new Date(now + 9 * 60 * 60 * 1000);
+        const endDay = new Date(Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), kstNow.getUTCDate()));
+        if (endDay.getUTCDay() === 0) endDay.setUTCDate(endDay.getUTCDate() - 2);
+        else if (endDay.getUTCDay() === 6) endDay.setUTCDate(endDay.getUTCDate() - 1);
+        const endDate = endDay.toISOString().slice(0, 10).replaceAll("-", "");
+        const startDate = new Date(endDay.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replaceAll("-", "");
         body = await requestFx(
           "/uapi/overseas-price/v1/quotations/inquire-daily-chartprice",
           "FHKST03030100",
