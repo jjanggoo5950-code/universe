@@ -51,7 +51,7 @@ test('repeated upstream 500 responses open the circuit and do not retry forever'
 });
 test('portfolio values use authoritative holdings beyond the latest 30 trades; account switch clears data',()=>{
   const nodes=new Map();
-  const node=()=>({value:'1',dataset:{},children:[],classList:{add(){},remove(){},toggle(){}},addEventListener(){},setAttribute(){},toggleAttribute(){},replaceChildren(){},append(){},querySelectorAll(){return [];},focus(){}});
+  const node=()=>({value:'1',dataset:{},children:[],classList:{add(){},remove(){},toggle(){}},addEventListener(){},setAttribute(){},toggleAttribute(){},replaceChildren(){},append(){},querySelectorAll(){return [];},closest(){return null;},focus(){}});
   const document={hidden:false,getElementById(id){if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},querySelector(){return node();},querySelectorAll(){return [];},createElement:node};
   const window={location:{origin:'https://example.com',pathname:'/'},clearTimeout(){}};
   const context={window,document,navigator:{onLine:true},localStorage:{getItem(){return null;},setItem(){},removeItem(){}},console,Intl,Date,Map,Set,URL,URLSearchParams,setTimeout:()=>0,clearTimeout(){},crypto};

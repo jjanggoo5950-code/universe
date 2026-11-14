@@ -19,3 +19,12 @@
 기본 시간 판정은 요일과 정규장 시각을 사용한다. 거래소 공휴일·임시 휴장·연장 세션의 정밀 캘린더와 미국 시세 공급 지연은 별도 보완 대상이다. 미국 API가 주는 가격의 실시간 이용 권한은 계정 조건에 따른다.
 `/health`에서 last_fx_error, last_snapshot_error, queued_requests, upstream_circuit_open을 확인한다. 503/429·응답 지연·DB CPU·연결 수·청구량을 확인하며 트래픽을 단계적으로 늘린다. 대규모 사용 전 읽기용 순위 사전 집계, 전체 보유 종목 갱신 예산과 KIS 제공 한도를 조정해야 한다.
 마이그레이션은 migrations/20261115_resilience.sql 및 20261115_held_quotes.sql. 신규 설치용 전체 SQL에도 포함됨. 비밀키는 Worker 환경에만 보관한다.
+
+## Shared stock popularity
+- Apply `migrations/20261115_popular_stocks.sql` before the matching frontend release.
+- `popular_stocks` in the shared overview contains counts only; per-user search history has no client read/write grants.
+- Holdings rank by distinct participants with a net positive share count. Search rank counts distinct Kakao users who successfully request a stock quote from search results in the last 7 days. Repeated searches never multiply a user's contribution.
+- Search writes are deduplicated for an hour and capped at 60 distinct symbols per user per rolling 24 hours. A failed popularity write does not block a quote lookup.
+- The home view shows 4 stocks; the market view shows up to 20, filtered by KR/US before limiting. If no one holds stocks, the default list uses recent searches. Empty lists are shown honestly without fixed stocks labeled as popular.
+- Popularity uses the existing 20-second shared overview cache and 30–35-second foreground polling. Existing held-quote rotation also refreshes popular searched stocks, with the same bounded queue and stale-price trading checks.
+- Browser fixtures use synthetic counts; database checks in `tests/popularity-rollback.sql` roll back all test data.

@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="campus-release" content="20261115-mobile-layout">
+  <meta name="campus-release" content="20261115-popular-stocks">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090b10">
   <meta name="description" content="한국·미국 주식으로 겨루는 대학생 모의투자 리그. 1,000만원으로 시작해 학교와 개인의 수익률을 쌓아보세요.">
@@ -82,6 +82,9 @@
     .market-tabs { display: flex; gap: 6px; }
     .market-tabs button, .segmented button { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; color: #919bad; background: #0d1118; font-size: 10px; }
     .market-tabs button.active, .segmented button.active { border-color: rgba(197,243,107,.34); color: var(--lime); background: rgba(197,243,107,.065); }
+    .popularity-tabs { margin-bottom: 8px; }
+    .popularity-hint { margin: 0 0 14px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .asset-popularity { display: block; margin-top: 4px; color: var(--lime); font-size: 10px; line-height: 1.5; }
     .stock-search { display: grid; grid-template-columns: minmax(0,1fr) 142px; gap: 8px; margin: 0 0 8px; }
     .stock-search input, .stock-search select { min-width: 0; width: 100%; padding: 10px 11px; border: 1px solid var(--line); border-radius: 7px; outline: none; color: var(--ink); background: #0b0f15; font-size: 11px; }
     .stock-search input:focus, .stock-search select:focus { border-color: rgba(197,243,107,.6); }
@@ -367,6 +370,8 @@
               <div><h2 class="card-title">주식 마켓</h2><p class="card-description"><button class="secondary" data-go="market" type="button">전체 종목 검색 →</button></p></div>
               <div class="market-tabs" aria-label="시장 선택"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div>
             </div>
+            <div class="market-tabs popularity-tabs" aria-label="인기 종목 정렬"><button class="active" type="button" data-popularity="holders" aria-pressed="true">많이 보유한</button><button type="button" data-popularity="searches" aria-pressed="false">많이 검색한</button></div>
+            <p class="popularity-hint"></p><div class="empty popularity-empty" hidden></div>
             <div class="table-scroll">
               <table class="market-table">
                 <thead><tr><th>종목</th><th class="price-heading">시세</th><th>변동률</th><th>시장</th><th></th></tr></thead>
@@ -443,7 +448,9 @@
       </section>
       <div class="layout">
         <section class="card">
-          <div class="card-heading"><div><h2 class="card-title">종목 목록</h2><p class="card-description">관심 종목과 보유 종목의 가격을 확인하세요.</p></div><div class="market-tabs"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div></div>
+          <div class="card-heading"><div><h2 class="card-title">리그 인기 종목</h2><p class="card-description">참가자들이 보유하거나 검색한 종목을 만나보세요.</p></div><div class="market-tabs"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div></div>
+          <div class="market-tabs popularity-tabs" aria-label="인기 종목 정렬"><button class="active" type="button" data-popularity="holders" aria-pressed="true">많이 보유한</button><button type="button" data-popularity="searches" aria-pressed="false">많이 검색한</button></div>
+            <p class="popularity-hint"></p><div class="empty popularity-empty" hidden></div>
           <div class="table-scroll"><table class="market-table"><thead><tr><th>종목</th><th class="price-heading">시세</th><th>변동률</th><th>시장</th><th></th></tr></thead><tbody id="market-rows-secondary"></tbody></table></div>
         </section>
         <aside class="card trade-panel">
@@ -524,6 +531,8 @@
       let selectedAsset = assets[0];
       let selectedSide = "buy";
       let activeMarket = "ALL";
+      let activePopularity = "holders", popularityChosen = false, popularNamesLoading = false;
+      const recordedStockSearches = new Set();
       let toastTimer = 0;
       let stockSearchTimer = 0;
       let stockSearchGeneration = 0;
@@ -719,9 +728,13 @@
           ...DEFAULT_STOCK_SYMBOLS,
           ...pinnedSearchSymbols,
           ...(state.holdings || []).map(holding => holding.symbol),
+          ...(remoteSummary.popular_stocks || []).map(item => item.symbol),
         ]);
         remoteSummary.quotes.forEach(quote => {
-          if (needed.has(quote.symbol)) registerQuoteAsset(quote);
+          if (needed.has(quote.symbol)) {
+            const listing = stockCatalog[quote.market]?.find(item => item.symbol === quote.symbol);
+            registerQuoteAsset(quote, listing);
+          }
         });
       }
       function pinSearchSymbol(symbol) {
@@ -731,6 +744,17 @@
           if (!removable) break;
           pinnedSearchSymbols.delete(removable);
         }
+      }
+      async function recordStockSearch(symbol) {
+        if (!remoteClient || !hasKakaoIdentity(authUser)) return;
+        const userId = authUser.id;
+        const key = userId + ":" + symbol + ":" + Math.floor(Date.now()/3600000);
+        if (recordedStockSearches.has(key)) return;
+        recordedStockSearches.add(key);
+        try {
+          const { error } = await remoteClient.rpc("record_campus_stock_search", { p_symbol:symbol });
+          if (error) recordedStockSearches.delete(key);
+        } catch { recordedStockSearches.delete(key); }
       }
       async function lookupSearchQuote(item, button) {
         const status = document.getElementById("stock-search-status");
@@ -749,6 +773,7 @@
           const asset = registerQuoteAsset(quote, item);
           if (!asset) throw new Error("유효한 시세가 도착하지 않았어요.");
           if (remoteSummary) remoteSummary.quotes = [...(remoteSummary.quotes || []).filter(q => q.symbol !== quote.symbol), quote];
+          void recordStockSearch(item.symbol);
           pinSearchSymbol(item.symbol);
           selectedAsset = asset;
           activeMarket = item.market;
@@ -871,18 +896,42 @@
         return { positions,total,profit,returnPct:profit/STARTING_CAPITAL*100 };
       }
       function displayPrice(asset) { if (asset.freshness === "demo") return "—"; return asset.currency === "USD" ? formatUSD(asset.price) : formatKRW(asset.price); }
+      function renderPopularityControls() {
+        document.querySelectorAll("[data-popularity]").forEach(button => {
+          const active = button.dataset.popularity === activePopularity;
+          button.classList.toggle("active", active); button.setAttribute("aria-pressed", String(active));
+        });
+        document.querySelectorAll(".popularity-hint").forEach(node => {
+          node.textContent = activePopularity === "searches"
+            ? "최근 7일 검색 결과에서 시세를 조회한 인원순 · 같은 사람은 한 번만 집계"
+            : "현재 1주 이상 보유한 인원순 · 리그 전체 기준";
+        });
+      }
       function renderAssetRows(targetId) {
         const tbody = document.getElementById(targetId);
-        const visible = assets.filter(a =>
-          (DEFAULT_STOCK_SYMBOLS.has(a.symbol) || pinnedSearchSymbols.has(a.symbol) || signedShares(a.symbol) > 0) &&
-          (activeMarket === "ALL" || a.market === activeMarket)
-        );
+        const field = activePopularity === "searches" ? "search_count" : "holder_count";
+        const other = activePopularity === "searches" ? "holder_count" : "search_count";
+        const popular = (remoteSummary?.popular_stocks || [])
+          .filter(p => Number(p[field]) > 0 && (activeMarket === "ALL" || p.market === activeMarket))
+          .sort((a,b) => Number(b[field])-Number(a[field]) || Number(b[other])-Number(a[other]) || a.symbol.localeCompare(b.symbol));
+        const visible = popular.map(p => assets.find(a => a.symbol === p.symbol)).filter(Boolean);
+        const container = tbody.closest(".card");
+        const empty = container?.querySelector(".popularity-empty");
+        if (empty) {
+          empty.hidden = visible.length > 0;
+          empty.textContent = !remoteSummary ? "인기 종목을 불러오고 있어요." : !Array.isArray(remoteSummary.popular_stocks)
+            ? "인기 종목을 잠시 불러오지 못했어요. 전체 종목 검색을 이용해주세요."
+            : activePopularity === "holders" ? "아직 보유 중인 종목이 없어요. 많이 검색한 종목을 보거나 직접 검색해보세요."
+            : "최근 검색된 종목이 없어요. 전체 종목 검색에서 첫 종목을 찾아보세요.";
+        }
+        const table = tbody.closest(".table-scroll");
+        if (table) table.hidden = !visible.length;
         tbody.replaceChildren();
-        (targetId === "market-rows" ? visible.slice(0,4) : visible).forEach(asset => {
+        (targetId === "market-rows" ? visible.slice(0,4) : visible.slice(0,20)).forEach(asset => {
           const tr = document.createElement("tr");
           const changeClass = signedClass(asset.change);
           const orderDisabled = !asset.tradable || quoteExpired(asset);
-          tr.innerHTML = '<td><div class="asset"><span class="asset-badge">' + escapeHTML(asset.badge) + '</span><span><span class="asset-name">' + escapeHTML(asset.name) + '</span><span class="asset-meta">' + escapeHTML(asset.symbol) + ' · ' + asset.code + '</span></span></div></td><td class="quote-price">' + displayPrice(asset) + '<span class="quote-context">' + escapeHTML(quoteContext(asset)) + '</span></td><td class="' + changeClass + '">' + formatReturn(asset.change) + '</td><td>' + (asset.market === "KR" ? "한국" : "미국") + '</td><td><button class="table-action" data-symbol="' + asset.symbol + '"' + (orderDisabled ? ' disabled title="장 마감 참고 가격은 주문할 수 없습니다."' : '') + '>주문</button></td>';
+          tr.innerHTML = '<td><div class="asset"><span class="asset-badge">' + escapeHTML(asset.badge) + '</span><span><span class="asset-name">' + escapeHTML(asset.name) + '</span><span class="asset-meta">' + escapeHTML(asset.symbol) + ' · ' + asset.code + '</span><span class="asset-popularity">' + (popular.find(p => p.symbol === asset.symbol)?.[field] || 0).toLocaleString("ko-KR") + (activePopularity === "searches" ? '명 검색 · 최근 7일' : '명 보유') + '</span></span></div></td><td class="quote-price">' + displayPrice(asset) + '<span class="quote-context">' + escapeHTML(quoteContext(asset)) + '</span></td><td class="' + changeClass + '">' + formatReturn(asset.change) + '</td><td>' + (asset.market === "KR" ? "한국" : "미국") + '</td><td><button class="table-action" data-symbol="' + asset.symbol + '"' + (orderDisabled ? ' disabled title="장 마감 참고 가격은 주문할 수 없습니다."' : '') + '>주문</button></td>';
           tbody.append(tr);
         });
         tbody.querySelectorAll("[data-symbol]").forEach(button => button.addEventListener("click", () => {
@@ -1099,6 +1148,7 @@
           document.getElementById("profile-name").textContent = state.profile.nickname;
           document.getElementById("profile-school").textContent = state.profile.school;
         }
+        renderPopularityControls();
         renderAssetRows("market-rows");
         renderAssetRows("market-rows-secondary");
         renderHoldings("mini-holdings");
@@ -1115,6 +1165,9 @@
         window.scrollTo({ top:0, behavior:"smooth" });
       }
       document.querySelectorAll(".nav [data-view], [data-go]").forEach(button => button.addEventListener("click", () => goToView(button.dataset.view || button.dataset.go)));
+      document.querySelectorAll("[data-popularity]").forEach(button => button.addEventListener("click", () => {
+        activePopularity = button.dataset.popularity; popularityChosen = true; render();
+      }));
       document.getElementById("stock-search").addEventListener("input", scheduleStockSearch);
       document.getElementById("stock-search-market").addEventListener("change", scheduleStockSearch);
       document.querySelectorAll("[data-market]").forEach(button => button.addEventListener("click", () => {
@@ -1232,6 +1285,12 @@
           return previous && (Date.parse(previous.as_of) > Date.parse(q.as_of) || (previous.stale && previous.as_of === q.as_of)) ? previous : q;
         });
         remoteSummary = data;
+        if (!popularityChosen) activePopularity = (data.popular_stocks || []).some(p => Number(p.holder_count)>0) ? "holders"
+          : (data.popular_stocks || []).some(p => Number(p.search_count)>0) ? "searches" : "holders";
+        if (data.popular_stocks?.length && !popularNamesLoading && (!stockCatalog.KR || !stockCatalog.US)) {
+          popularNamesLoading = true;
+          ensureStockCatalog("ALL").then(() => { syncRemoteQuoteAssets(); render(); }).catch(() => {}).finally(() => { popularNamesLoading = false; });
+        }
         remoteMode = true;
         syncRemoteQuoteAssets();
         (data.quotes || []).forEach(quote => {
