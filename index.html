@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 14863)
-Total output lines: 784
+Warning: truncated output (original token count: 15741)
+Total output lines: 810
 
 <!doctype html>
 <html lang="ko">
@@ -104,6 +104,7 @@ Total output lines: 784
     .exchange-form input:focus, .field input:focus, .field select:focus { border-color: rgba(197,243,107,.6); }
     .primary { padding: 10px 13px; border: 1px solid var(--lime); border-radius: 7px; color: #10150b; background: var(--lime); font-size: 10px; font-weight: 700; white-space: nowrap; }
     .primary:hover { background: #d5ff87; }
+    .primary:disabled, .secondary:disabled { opacity: .42; cursor: not-allowed; filter: saturate(.3); }
     .secondary { padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px; color: #cbd3df; background: #171c25; font-size: 10px; }
     .secondary:hover { background: #1d2430; }
     .leader-list { display: grid; gap: 0; }
@@ -234,9 +235,9 @@ Total output lines: 784
       <div class="hero-aside"><strong>₩10,000,000</strong>INITIAL CAPITAL<br>REAL MONEY · NEVER</div>
     </section>
 
-    <div class="notice" role="status">
+    <div class="notice" id="data-notice" role="status">
       <span class="notice-icon">◎</span>
-      <span><strong>미리보기 모드</strong> — 아래 가격은 게임 흐름을 보여주기 위한 예시 시세이며 실제 주가가 아닙니다. 실전 리그는 시세 제공자 연결과 온라인 데이터베이스 설정이 끝난 뒤 시작할 수 있습니다.</span>
+      <span id="data-notice-copy"><strong>미리보기 모드</strong> — 아래 가격은 게임 흐름을 보여주기 위한 예시 시세이며 실제 주가가 아닙니다. 실전 리그는 시세 제공자 연결과 온라인 데이터베이스 설정이 끝난 뒤 시작할 수 있습니다.</span>
     </div>
 
     <section id="dashboard-view" class="view active">
@@ -244,7 +245,7 @@ Total output lines: 784
         <article class="stat"><div class="stat-label">MY TOTAL ASSETS</div><div class="stat-value" id="stat-assets">₩10,000,000</div><div class="stat-sub">현금 + 보유 자산 평가액</div></article>
         <article class="stat"><div class="stat-label">MY RETURN</div><div class="stat-value" id="stat-return">0.00%</div><div class="stat-sub" id="stat-profit">수익금 ₩0</div></article>
         <article class="stat"><div class="stat-label">MY UNIVERSITY</div><div class="stat-value" id="stat-school">참가 전</div><div class="stat-sub">학교별 합산 수익금 · 평균 수익률</div></article>
-        <article class="stat"><div class="stat-label">USD / KRW</div><div class="stat-value" id="stat-fx">₩1,380</div><div class="stat-sub">예시 환율 · 게임용</div></article>
+        <article class="stat"><div class="stat-label">USD / KRW</div><div class="stat-value" id="stat-fx">₩1,380</div><div class="stat-sub" id="stat-fx-sub">예시 환율 · 게임용</div></article>
       </div>
 
       <div class="layout">
@@ -256,7 +257,7 @@ Total output lines: 784
             </div>
             <div style="overflow-x:auto">
               <table class="market-table">
-                <thead><tr><th>종목</th><th>예시 가격</th><th>변동률</th><th>시장</th><th></th></tr></thead>
+                <thead><tr><th>종목</th><th class="price-heading">예시 가격</th><th>변동률</th><th>시장</th><th></th></tr></thead>
                 <tbody id="market-rows"></tbody>
               </table>
             </div>
@@ -293,7 +294,115 @@ Total output lines: 784
             <div class="profile-card"><div class="profile-left"><span class="profile-avatar">✦</span><div style="min-width:0"><div class="profile-name" id="profile-name"></div><div class="profile-school" id="profile-school"></div></div></div><button class="secondary" id="edit-profile" type="button">수정</button></div>
           </section>
           <section class="card">
-            <d…2863 tokens truncated…      const total = state.wallet.krw + state.wallet.usd * USDKRW + holdingsKrw;
+            <div class="card-heading"><div><h2 class="card-title">환전소</h2><p class="card-description">미국 주식을 사려면 먼저 원화를 달러로 바꾸세요.</p></div><span class="tiny-label">FX DESK</span></div>
+            <div class="currency-panel">
+              <div><div class="currency-label">보유 원화</div><div class="currency-amount" id="cash-krw">₩10,000,000</div><div class="currency-unit">KRW WALLET</div></div>
+              <div class="swap">⇄</div>
+              <div><div class="currency-label">보유 달러</div><div class="currency-amount" id="cash-usd">$0.00</div><div class="currency-unit">USD WALLET</div></div>
+            </div>
+            <p class="fx-rate"><span id="fx-label">게임 환율</span> <strong id="fx-display">1 USD = ₩1,380</strong> <span id="fx-freshness" class="muted">· 예시 값</span></p>
+            <form class="exchange-form" id="exchange-form">
+              <input id="exchange-amount" type="number" min="1000" step="1000" placeholder="환전할 원화" aria-label="환전할 원화" required>
+              <button class="secondary" id="exchange-submit" type="submit">USD로 환전</button>
+            </form>
+            <p class="fx-foot">환율 변동은 미국 주식의 원화 평가액에도 반영됩니다. 실제 환전이나 금융 거래는 발생하지 않아요.</p>
+          </section>
+          <section class="card">
+            <div class="card-heading"><div><h2 class="card-title">내 보유 종목</h2><p class="card-description">보유 수량과 평가 손익</p></div><button class="secondary" data-go="portfolio" type="button">전체 보기</button></div>
+            <div id="mini-holdings" class="holdings"></div>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section id="market-view" class="view">
+      <div class="view-head"><div><h2>Market desk</h2><p>한국·미국 주식 예시 데이터로 주문 흐름을 체험해보세요.</p></div><span class="data-chip"><i class="data-dot"></i> SAMPLE QUOTES</span></div>
+      <div class="layout">
+        <section class="card">
+          <div class="card-heading"><div><h2 class="card-title">종목 목록</h2><p class="card-description">현재 가격은 예시값이며 실제 호가와 다릅니다.</p></div><div class="market-tabs"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div></div>
+          <div style="overflow-x:auto"><table class="market-table"><thead><tr><th>종목</th><th class="price-heading">예시 가격</th><th>변동률</th><th>시장</th><th></th></tr></thead><tbody id="market-rows-secondary"></tbody></table></div>
+        </section>
+        <aside class="card trade-panel">
+          <div class="card-heading"><div><h2 class="card-title">주문하기</h2><p class="card-description">보유 현금 내에서만 거래됩니다.</p></div><span class="tiny-label">PAPER ORDER</span></div>
+          <div class="trade-symbol"><span id="trade-badge" class="trade-big-badge">—</span><div><div class="asset-name" id="trade-name">종목을 선택하세요</div><div class="trade-price" id="trade-price">시장 목록의 주문 버튼을 눌러주세요.</div></div></div>
+          <div class="segmented"><button class="buy active" data-side="buy" type="button">매수</button><button class="sell" data-side="sell" type="button">매도</button></div>
+          <label class="field">주문 수량<input id="order-quantity" type="number" min="1" step="1" value="1"></label>
+          <div class="order-preview"><div class="preview-row"><span>주문 예상 금액</span><strong id="order-value">—</strong></div><div class="preview-row"><span>사용 가능 현금</span><strong id="available-cash">—</strong></div></div>
+          <button id="trade-submit" class="primary trade-submit" type="button">참가 후 주문하기</button>
+          <p id="trade-status" class="inline-status" role="status">먼저 리그 참가 후 주문할 수 있습니다.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="portfolio-view" class="view">
+      <div class="view-head"><div><h2>My portfolio</h2><p>1,000만원으로 시작한 가상 계좌와 매매 기록.</p></div><span class="data-chip"><i class="data-dot"></i> PAPER ACCOUNT</span></div>
+      <div class="subgrid">
+        <section class="card">
+          <div class="card-heading"><div><h2 class="card-title">자산 현황</h2><p class="card-description">미국 종목은 현재 게임 환율로 원화 환산합니다.</p></div></div>
+          <div class="tiny-label">TOTAL ASSETS · KRW</div><div class="portfolio-total" id="portfolio-total">₩10,000,000</div>
+          <div class="portfolio-meta"><span>수익률 <strong id="portfolio-return">0.00%</strong></span><span>수익금 <strong id="portfolio-profit">₩0</strong></span><span>USD/KRW <strong id="portfolio-fx">₩1,380</strong></span></div>
+          <div class="currency-panel" style="margin-top:18px"><div><div class="currency-label">CASH · KRW</div><div class="currency-amount" id="portfolio-krw">₩10,000,000</div></div><div class="swap">+</div><div><div class="currency-label">CASH · USD</div><div class="currency-amount" id="portfolio-usd">$0.00</div></div></div>
+        </section>
+        <section class="card"><div class="card-heading"><div><h2 class="card-title">보유 종목</h2><p class="card-description">평가 손익은 예시 시세를 기준으로 계산됩니다.</p></div></div><div id="portfolio-holdings" class="holdings"></div></section>
+      </div>
+      <section class="card" style="margin-top:15px">
+        <div class="card-heading"><div><h2 class="card-title">최근 거래</h2><p class="card-description">이 브라우저에 저장된 모의 주문 내역</p></div></…741 tokens truncated…ymbol:"TSLA", code:"NASDAQ", name:"Tesla", market:"US", currency:"USD", price:338.70, change:-1.08, badge:"T", freshness:"demo", tradable:false }
+      ];
+      let state = loadState();
+      let selectedAsset = assets[0];
+      let selectedSide = "buy";
+      let activeMarket = "ALL";
+      let toastTimer = 0;
+      let remoteClient = null, remoteMode = false, remoteSummary = null, captchaToken = null, turnstileWidgetId = null;
+      let fxFreshness = "demo", fxTradable = false;
+
+      function loadState() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+          if (parsed && parsed.wallet && Array.isArray(parsed.trades)) return parsed;
+        } catch (_) {}
+        return { profile:null, wallet:{ krw:STARTING_CAPITAL, usd:0 }, trades:[], joinedAt:null };
+      }
+      function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      function formatKRW(n) { return "₩" + Math.round(n || 0).toLocaleString("ko-KR"); }
+      function formatUSD(n) { return "$" + Number(n || 0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+      function formatReturn(n) { const sign = n > 0 ? "+" : ""; return sign + Number(n || 0).toFixed(2) + "%"; }
+      function signedClass(n) { return n > 0 ? "positive" : n < 0 ? "negative" : "muted"; }
+      function allQuotesHaveData() { return assets.every(a => a.freshness !== "demo") && fxFreshness !== "demo"; }
+      function allQuotesAreRealtime() { return assets.every(a => a.freshness === "real_time") && fxFreshness === "real_time"; }
+      function escapeHTML(text) { return String(text).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+      function toast(message) {
+        const node = document.getElementById("toast");
+        node.textContent = message;
+        node.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => node.classList.remove("show"), 2600);
+      }
+      function signedShares(symbol) {
+        return state.trades.reduce((total, trade) => {
+          if (trade.symbol !== symbol) return total;
+          return total + (trade.side === "buy" ? trade.quantity : -trade.quantity);
+        }, 0);
+      }
+      function positionCost(symbol) {
+        let shares = 0, cost = 0;
+        state.trades.filter(t => t.symbol === symbol).forEach(t => {
+          if (t.side === "buy") { cost += t.price * t.quantity; shares += t.quantity; }
+          else if (shares > 0) { const avg = cost / shares; cost -= avg * Math.min(t.quantity, shares); shares -= Math.min(t.quantity, shares); }
+        });
+        return { shares, cost };
+      }
+      function metrics() {
+        const positions = assets.map(asset => {
+          const basis = positionCost(asset.symbol);
+          const shares = signedShares(asset.symbol);
+          const valueNative = shares * asset.price;
+          const valueKrw = asset.currency === "USD" ? valueNative * USDKRW : valueNative;
+          const costKrw = asset.currency === "USD" ? basis.cost * USDKRW : basis.cost;
+          return { asset, shares, valueNative, valueKrw, costKrw, pnl:valueKrw-costKrw };
+        }).filter(item => item.shares > 0);
+        const holdingsKrw = positions.reduce((sum, p) => sum + p.valueKrw, 0);
+        const total = state.wallet.krw + state.wallet.usd * USDKRW + holdingsKrw;
         const profit = total - STARTING_CAPITAL;
         return { positions,total,profit,returnPct:profit/STARTING_CAPITAL*100 };
       }
@@ -381,7 +490,7 @@ Total output lines: 784
       function renderTradePanel() {
         document.getElementById("trade-badge").textContent = selectedAsset.badge;
         document.getElementById("trade-name").textContent = selectedAsset.name + " · " + selectedAsset.symbol;
-        document.getElementById("trade-price").textContent = displayPrice(selectedAsset) + " · 예시 시세";
+        document.getElementById("trade-price").textContent = displayPrice(selectedAsset) + (selectedAsset.freshness === "demo" ? " · 예시 시세" : " · " + selectedAsset.freshness);
         const quantity = Math.max(1, Number(document.getElementById("order-quantity").value || 1));
         const amount = quantity * selectedAsset.price;
         const wallet = selectedAsset.currency === "USD" ? state.wallet.usd : state.wallet.krw;
@@ -390,8 +499,14 @@ Total output lines: 784
         const submit = document.getElementById("trade-submit");
         submit.textContent = !state.profile ? "참가 후 주문하기" : (selectedSide === "buy" ? "가상 주식 매수" : "가상 주식 매도");
         const owned = signedShares(selectedAsset.symbol);
+        const remoteQuote = remoteMode && remoteSummary ? (remoteSummary.quotes || []).find(q => q.symbol === selectedAsset.symbol) : null;
+        const blockedByQuote = remoteMode && (!remoteQuote || !remoteQuote.is_tradable || !fxTradable);
+        submit.disabled = blockedByQuote;
+        submit.title = blockedByQuote ? "매매 가능한 시세를 연결한 뒤 온라인 주문이 열립니다." : "";
         document.getElementById("trade-status").textContent = !state.profile
           ? "먼저 리그 참가 후 주문할 수 있습니다."
+          : blockedByQuote
+            ? "온라인 주문은 매매 가능한 실제 시세 연결 후 열립니다."
           : selectedAsset.currency === "USD" && selectedSide === "buy" && state.wallet.usd < amount
             ? "달러 잔액이 부족해요. 환전소에서 먼저 환전해주세요."
             : selectedSide === "sell" && owned < quantity
@@ -400,13 +515,28 @@ Total output lines: 784
       }
       function render() {
         const m = metrics();
-        document.getElementById("data-mode").textContent = remoteMode ? "ONLINE · " + ((remoteSummary && remoteSummary.quotes || []).some(q => q.freshness !== "demo") ? "MARKET DATA" : "DEMO QUOTES") : "DEMO MODE";
+        document.getElementById("data-mode").textContent = !remoteMode ? "DEMO MODE" : allQuotesAreRealtime() ? "ONLINE · REALTIME" : allQuotesHaveData() ? "ONLINE · MARKET DATA" : "ONLINE · DEMO QUOTES";
+        document.querySelectorAll(".price-heading").forEach(node => { node.textContent = allQuotesHaveData() ? (allQuotesAreRealtime() ? "현재가" : "참고 가격") : "예시 가격"; });
+        const notice = document.getElementById("data-notice-copy");
+        if (!remoteMode) {
+          notice.innerHTML = "<strong>미리보기 모드</strong> — 아래 가격은 게임 흐름을 보여주기 위한 예시 시세이며 실제 주가가 아닙니다. 실전 리그는 시세 제공자 연결과 온라인 데이터베이스 설정이 끝난 뒤 시작할 수 있습니다.";
+        } else if (!allQuotesHaveData()) {
+          notice.innerHTML = "<strong>온라인 DB 연결됨 · 시세 미연결</strong> — 참가자와 순위는 공유할 수 있지만 현재 표시는 예시 가격입니다. 유효한 시장 데이터가 연결될 때까지 온라인 주문은 잠겨 있습니다.";
+        } else if (allQuotesAreRealtime()) {
+          notice.innerHTML = "<strong>실시간 시세 연결됨</strong> — 주가와 환율은 모의 계좌 평가에만 사용됩니다. 실제 투자·환전은 발생하지 않습니다.";
+        } else {
+          notice.innerHTML = "<strong>온라인 시세 연결됨</strong> — 시장별 시세 지연 또는 장마감 기준이 다를 수 있습니다. 항목별 시세 상태를 확인하세요. 실제 투자·환전은 발생하지 않습니다.";
+        }
+        document.getElementById("fx-label").textContent = fxFreshness === "demo" ? "게임 환율" : "USD/KRW 환율";
+        document.getElementById("fx-freshness").textContent = fxFreshness === "demo" ? "· 예시 값" : "· " + fxFreshness;
+        document.getElementById("exchange-submit").disabled = remoteMode && !fxTradable;
         document.getElementById("stat-assets").textContent = formatKRW(m.total);
         document.getElementById("stat-return").textContent = formatReturn(m.returnPct);
         document.getElementById("stat-return").className = "stat-value " + signedClass(m.returnPct);
         document.getElementById("stat-profit").textContent = "수익금 " + (m.profit >= 0 ? "+" : "−") + formatKRW(Math.abs(m.profit));
         document.getElementById("stat-profit").className = "stat-sub " + signedClass(m.profit);
         document.getElementById("stat-fx").textContent = formatKRW(USDKRW);
+        document.getElementById("stat-fx-sub").textContent = fxFreshness === "demo" ? "예시 환율 · 게임용" : "USD/KRW · " + fxFreshness;
         document.getElementById("fx-display").textContent = "1 USD = " + formatKRW(USDKRW);
         document.getElementById("cash-krw").textContent = formatKRW(state.wallet.krw);
         document.getElementById("cash-usd").textContent = formatUSD(state.wallet.usd);
@@ -583,7 +713,8 @@ Total output lines: 784
         (data.quotes || []).forEach(quote => {
           if (quote.symbol === "USD/KRW") USDKRW = Number(quote.price);
           const asset = assets.find(item => item.symbol === quote.symbol);
-          if (asset) { asset.price = Number(quote.price); asset.change = Number(quote.change_pct); }
+          if (asset) { asset.price = Number(quote.price); asset.change = Number(quote.change_pct); asset.freshness = quote.freshness; asset.tradable = quote.is_tradable; }
+          if (quote.symbol === "USD/KRW") { fxFreshness = quote.freshness; fxTradable = quote.is_tradable; }
         });
         render();
         mountTurnstile();
