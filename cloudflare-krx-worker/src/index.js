@@ -455,10 +455,20 @@ export class KisCollector {
         const stampB = String(b.stck_bsop_date || "") + String(b.stck_cntg_hour || "");
         return stampB.localeCompare(stampA);
       })[0] || {};
-      const price = [output, latest].map((row) => Number(
-        row.ovrs_nmix_prpr ?? row.fx_rate ?? row.prpr ?? row.ovrs_nmix_prdy_clpr
-      )).find((value) => Number.isFinite(value) && value > 0);
-      if (!price) throw new Error("kis_fx_price_missing");
+      const price = [output, latest].flatMap((row) => [
+        row.ovrs_nmix_prpr,
+        row.fx_rate,
+        row.fxrt,
+        row.prpr,
+        row.rate,
+        row.stck_prpr,
+        row.ovrs_nmix_prdy_clpr,
+      ]).map((value) => Number(String(value ?? "").replaceAll(",", "").trim()))
+        .find((value) => Number.isFinite(value) && value > 0);
+      if (!price) {
+        const keys = Array.from(new Set([...Object.keys(output), ...Object.keys(latest)])).slice(0, 12).join(",");
+        throw new Error("kis_fx_price_missing_" + (keys || "empty_output"));
+      }
 
       const date = String(latest.stck_bsop_date || output.stck_bsop_date || "").replace(/\D/g, "");
       const time = String(latest.stck_cntg_hour || output.stck_cntg_hour || "").replace(/\D/g, "").padStart(6, "0");
