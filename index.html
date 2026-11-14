@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080b13">
-  <meta name="description" content="점과 기호로 그린, 천천히 움직이는 ASCII 태양계.">
-  <title>Solar System — Orbiting Code</title>
+  <meta name="description" content="방명록 글 하나가 행성이 되어 은하로 자라는 인터랙티브 ASCII 태양계.">
+  <title>Visitor Galaxy — Orbiting Code</title>
   <style>
     :root {
       color-scheme: dark;
@@ -65,6 +65,36 @@
     .footnote { color: #7f899b; font-size: 10px; letter-spacing: .025em; text-transform: none; }
     .footnote a { color: #bdc8dc; text-decoration-color: #72829c80; text-underline-offset: 3px; }
     .page-note { margin: 13px 4px 0; color: #687386; font: 10px/1.7 "Courier New", "Malgun Gothic", monospace; text-align: right; }
+    .guestbook { margin-top: 20px; padding: 24px; border: 1px solid rgba(203, 215, 235, .15); border-radius: 15px; background: rgba(13, 18, 29, .82); box-shadow: 0 20px 60px #0005; }
+    .guestbook-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+    .guestbook-kicker { margin: 0 0 7px; color: #d8b768; font: 10px/1.4 "Courier New", monospace; letter-spacing: .12em; }
+    .guestbook-title { margin: 0; color: #f3f0e7; font-size: clamp(19px, 3vw, 25px); font-weight: 500; letter-spacing: -.03em; }
+    .guestbook-intro { margin: 8px 0 0; color: #a4afc0; font-size: 13px; line-height: 1.6; }
+    .planet-count { min-width: 96px; padding: 9px 12px; border: 1px solid rgba(244, 200, 106, .23); border-radius: 9px; color: #f4d88f; background: rgba(244, 200, 106, .07); text-align: center; font: 15px/1.2 "Courier New", monospace; }
+    .planet-count span { display: block; margin-top: 5px; color: #8995a8; font-size: 9px; letter-spacing: .08em; }
+    .guestbook-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 27px; }
+    .guestbook-form { display: grid; align-content: start; gap: 12px; }
+    .guestbook-field { display: grid; gap: 6px; color: #c2cad6; font-size: 12px; }
+    .guestbook-field input, .guestbook-field textarea { width: 100%; border: 1px solid rgba(203, 215, 235, .17); border-radius: 8px; padding: 10px 11px; color: var(--ink); background: #090e18; font: 14px/1.45 "Segoe UI", "Malgun Gothic", sans-serif; }
+    .guestbook-field textarea { min-height: 91px; resize: vertical; }
+    .guestbook-field input:focus, .guestbook-field textarea:focus { outline: 2px solid #e1bd6570; border-color: #e1bd6570; }
+    .public-note { margin: 0; color: #8994a5; font-size: 11px; line-height: 1.5; }
+    #turnstile-widget { min-height: 0; }
+    .guestbook-submit { justify-self: start; min-height: 40px; }
+    .guestbook-submit:disabled { opacity: .52; cursor: not-allowed; }
+    .guestbook-status { min-height: 18px; margin: 0; color: #aab5c5; font-size: 12px; line-height: 1.5; }
+    .guestbook-status[data-kind="error"] { color: #f0a08c; }
+    .guestbook-status[data-kind="success"] { color: #9ed6b2; }
+    .recent-heading { margin: 2px 0 12px; color: #d3d9e2; font: 11px/1.4 "Courier New", monospace; letter-spacing: .09em; }
+    .recent-empty { margin: 0; padding: 14px 0; color: #8792a3; font-size: 12px; line-height: 1.6; }
+    .recent-list { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+    .recent-entry { display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; align-items: start; gap: 8px; padding: 9px 0; border-top: 1px solid rgba(196, 208, 226, .09); }
+    .recent-glyph { color: #f4c86a; font: 14px/1.3 "Courier New", monospace; text-align: center; }
+    .recent-copy { min-width: 0; }
+    .recent-name { display: block; overflow: hidden; color: #d9dee8; font-size: 11px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+    .recent-message { margin: 3px 0 0; overflow-wrap: anywhere; color: #9da8b8; font-size: 12px; line-height: 1.45; }
+    .recent-date { color: #737f91; font: 9px/1.4 "Courier New", monospace; white-space: nowrap; }
+    .guestbook-foot { margin: 17px 0 0; padding-top: 13px; border-top: 1px solid var(--line); color: #748094; font: 10px/1.6 "Courier New", "Malgun Gothic", monospace; }
     @media (max-width: 640px) {
       body { padding: 22px 12px; }
       .masthead { align-items: flex-start; }
@@ -80,11 +110,18 @@
       .button { padding: 0 10px; font-size: 9px; }
       .footnote { width: 100%; text-align: right; }
       .page-note { font-size: 9px; }
+      .guestbook { padding: 18px 15px; }
+      .guestbook-grid { grid-template-columns: 1fr; gap: 20px; }
+      .guestbook-intro { font-size: 12px; }
+      .recent-entry { grid-template-columns: 16px minmax(0, 1fr); }
+      .recent-date { grid-column: 2; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; }
     }
   </style>
+  <script>window.onTurnstileLoaded = () => document.dispatchEvent(new Event("turnstile-loaded"));</script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoaded" async defer></script>
 </head>
 <body>
   <main class="page">
@@ -94,10 +131,10 @@
     </header>
 
     <section class="frame" aria-label="인터랙티브 태양계">
-      <div class="frame-top"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>solar.system.exe</span><span>8 ORBITS · 1 STAR</span></div>
+      <div class="frame-top"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>solar.system.exe</span><span>8 ORBITS · OPEN GALAXY</span></div>
       <div class="stage">
-        <div class="stage-meta"><span>01 / THE SOLAR SYSTEM</span><span>GLYPHS IN MOTION</span></div>
-        <canvas id="universe" role="img" aria-label="태양 주위를 공전하는 여덟 행성과 별, 소행성대를 점과 문자로 그린 애니메이션"></canvas>
+        <div class="stage-meta"><span>01 / SOLAR SYSTEM → GALAXY</span><span>VISITORS BECOME WORLDS</span></div>
+        <canvas id="universe" role="img" aria-label="행성들이 태양 주위를 돌고, 방명록 글이 늘수록 은하처럼 커지는 애니메이션"></canvas>
       </div>
       <div class="legend" aria-label="행성 기호 안내">
         <span class="legend-item"><span class="legend-glyph" style="color:#d9dce3">m</span><span class="legend-name">Mercury</span></span>
@@ -118,11 +155,45 @@
         <div class="footnote">작은 우주를 그리는 파이썬 코드 · <a href="solar_system_ascii.py" download>코드 내려받기</a></div>
       </div>
     </section>
-    <p class="page-note">점, 문자, 빛으로 만든 태양계 · 크기와 거리는 실제 비율과 다릅니다.</p>
+    <section class="guestbook" aria-labelledby="guestbook-title">
+      <div class="guestbook-heading">
+        <div>
+          <p class="guestbook-kicker">A NOTE BECOMES A WORLD</p>
+          <h1 class="guestbook-title" id="guestbook-title">은하에 이름 하나 남기기</h1>
+          <p class="guestbook-intro">짧은 방명록 글 하나가 새 행성이 되어 별들 사이에 자리 잡습니다.</p>
+        </div>
+        <div class="planet-count" aria-live="polite"><strong id="planet-count">0</strong><span>VISITOR PLANETS</span></div>
+      </div>
+      <div class="guestbook-grid">
+        <form class="guestbook-form" id="guestbook-form">
+          <label class="guestbook-field" for="guest-nickname">별명
+            <input id="guest-nickname" name="nickname" maxlength="24" autocomplete="nickname" placeholder="익명의 별" required>
+          </label>
+          <label class="guestbook-field" for="guest-message">방명록 한 줄
+            <textarea id="guest-message" name="message" maxlength="140" placeholder="이 우주에 남기고 싶은 말을 적어주세요." required></textarea>
+          </label>
+          <p class="public-note">작성한 별명과 글은 공개되며, 은하에 행성으로 표시됩니다.</p>
+          <div id="turnstile-widget" aria-label="자동 입력 방지 확인"></div>
+          <button class="button primary guestbook-submit" id="guestbook-submit" type="submit">✦ &nbsp; 행성 추가하기</button>
+          <p class="guestbook-status" id="guestbook-status" role="status" aria-live="polite">방명록 저장소에 연결하고 있습니다.</p>
+        </form>
+        <div class="recent-entries">
+          <h2 class="recent-heading">RECENT SIGNALS</h2>
+          <p class="recent-empty" id="recent-empty">아직 방명록이 없어요. 첫 번째 행성을 남겨주세요.</p>
+          <ul class="recent-list" id="recent-list" aria-live="polite"></ul>
+        </div>
+      </div>
+      <p class="guestbook-foot">익명 방문자 계정당 한 개의 행성을 남길 수 있습니다. 크기와 궤도는 시각화를 위한 표현입니다.</p>
+    </section>
+    <p class="page-note">점과 기호로 시작한 태양계가 방문자의 방명록과 함께 은하로 자랍니다.</p>
   </main>
 
-  <script>
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
     (() => {
+      const SUPABASE_URL = "https://cxgrrdxjrqxoayeknqkk.supabase.co";
+      const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_nFHzj2pQQcLhm_ghuDuKqQ_GS0xnVkQ";
+      const TURNSTILE_SITE_KEY = "0x4AAAAAAGAtu1NQu0hn8Shu";
       const canvas = document.getElementById('universe');
       const ctx = canvas.getContext('2d');
       const pauseButton = document.getElementById('pause');
@@ -130,6 +201,15 @@
       const resetButton = document.getElementById('reset');
       const statusText = document.getElementById('status-text');
       const statusDot = document.getElementById('status-dot');
+      const guestbookForm = document.getElementById('guestbook-form');
+      const guestbookStatus = document.getElementById('guestbook-status');
+      const guestbookSubmit = document.getElementById('guestbook-submit');
+      const guestNickname = document.getElementById('guest-nickname');
+      const guestMessage = document.getElementById('guest-message');
+      const turnstileContainer = document.getElementById('turnstile-widget');
+      const recentList = document.getElementById('recent-list');
+      const recentEmpty = document.getElementById('recent-empty');
+      const planetCount = document.getElementById('planet-count');
       const colors = {
         mercury: '#d9dce3', venus: '#f1c85e', earth: '#60a9ff', green: '#75d98c',
         mars: '#ed765b', jupiter: '#e9a05f', saturn: '#e7c277', uranus: '#75d8d6',
@@ -146,6 +226,9 @@
         { name: 'NEPTUNE', glyph: '{N}', color: colors.neptune, orbit: .875, speed: .15, phase: .8, size: 13 },
       ];
       let width = 0, height = 0, elapsed = 0, lastTime = 0, paused = false, speed = 1;
+      let visitorEntries = [], totalEntryCount = 0, supabaseClient = null, captchaToken = null, turnstileWidgetId = null;
+      let hasAnonymousSession = false;
+      const galaxyColors = ['#f4c86a', '#75d8d6', '#ed8c79', '#a99bff', '#93d2a2', '#e7a0cf'];
       const speedSteps = [0.5, 1, 1.5, 2];
       const stars = Array.from({ length: 150 }, (_, i) => {
         const random = Math.abs(Math.sin(i * 127.1 + 311.7) * 43758.5453) % 1;
@@ -228,8 +311,9 @@
         }
         ctx.globalAlpha = 1;
 
+        const galaxyGrowth = Math.min(totalEntryCount / 180, .84);
         planets.forEach((planet, index) => {
-          drawOrbit(cx, cy, outerX * planet.orbit, outerY * planet.orbit, .15 + index * .006);
+          drawOrbit(cx, cy, outerX * planet.orbit, outerY * planet.orbit, (.15 + index * .006) * (1 - galaxyGrowth));
         });
 
         // The asteroid belt is made of tiny drifting punctuation marks.
@@ -260,6 +344,8 @@
           ctx.textBaseline = 'alphabetic';
         });
 
+        drawVisitorGalaxy(cx, cy, outerX, outerY, t);
+
         // A quiet stream of code-like particles drifts across the scene.
         for (let i = 0; i < 15; i++) {
           const x = (i * 89 + t * (8 + (i % 4) * 3)) % width;
@@ -271,6 +357,187 @@
         }
         ctx.globalAlpha = 1;
       }
+
+      function drawVisitorGalaxy(cx, cy, outerX, outerY, t) {
+        if (!visitorEntries.length) return;
+        const maxRadius = Math.min(outerX * .94, (outerY / Math.max(outerX, 1)) * outerX * .94);
+        const startRadius = Math.max(25, outerX * .055);
+        const spacing = Math.max(3.6, outerX / 34);
+        const verticalScale = Math.min(1, outerY / Math.max(outerX, 1));
+        visitorEntries.forEach((entry, index) => {
+          const arm = index % 3;
+          const turn = Math.floor(index / 3);
+          const radius = Math.min(maxRadius, startRadius + turn * spacing);
+          const angle = arm * Math.PI * 2 / 3 + turn * .16 + Math.log1p(radius) * .72 + t * .012;
+          const x = cx + Math.cos(angle) * radius;
+          const y = cy + Math.sin(angle) * radius * verticalScale;
+          const color = galaxyColors[index % galaxyColors.length];
+          const glyph = ['o', '+', '*', 'x', '.', '·'][index % 6];
+          const size = index % 11 === 0 ? 11 : 8;
+          glow(x, y, size * 1.6, color, .23);
+          ctx.fillStyle = color;
+          ctx.globalAlpha = .72 + (index % 4) * .07;
+          ctx.font = `bold ${size}px "Courier New", monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(glyph, x, y);
+        });
+        ctx.globalAlpha = 1;
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'alphabetic';
+      }
+
+      function setGuestbookStatus(message, kind = '') {
+        guestbookStatus.textContent = message;
+        guestbookStatus.dataset.kind = kind;
+      }
+
+      function updateGuestbookView() {
+        planetCount.textContent = totalEntryCount.toLocaleString('ko-KR');
+        statusText.textContent = `SYSTEM ONLINE · ${totalEntryCount.toLocaleString('ko-KR')} WORLDS`;
+        recentList.replaceChildren();
+        recentEmpty.hidden = visitorEntries.length > 0;
+        [...visitorEntries].slice(-6).reverse().forEach((entry, index) => {
+          const item = document.createElement('li');
+          item.className = 'recent-entry';
+          const glyph = document.createElement('span');
+          glyph.className = 'recent-glyph';
+          glyph.textContent = ['✦', '+', 'o', '·', '*', '✧'][index % 6];
+          const copy = document.createElement('div');
+          copy.className = 'recent-copy';
+          const name = document.createElement('strong');
+          name.className = 'recent-name';
+          name.textContent = entry.nickname;
+          const message = document.createElement('p');
+          message.className = 'recent-message';
+          message.textContent = entry.message;
+          copy.append(name, message);
+          const date = document.createElement('time');
+          date.className = 'recent-date';
+          date.dateTime = entry.created_at;
+          date.textContent = new Intl.DateTimeFormat('ko-KR', { month: 'short', day: 'numeric' }).format(new Date(entry.created_at));
+          item.append(glyph, copy, date);
+          recentList.append(item);
+        });
+      }
+
+      function mountTurnstile() {
+        if (hasAnonymousSession) {
+          turnstileContainer.hidden = true;
+          return;
+        }
+        if (!window.turnstile) {
+          document.addEventListener('turnstile-loaded', mountTurnstile, { once: true });
+          return;
+        }
+        if (turnstileWidgetId !== null) return;
+        turnstileWidgetId = window.turnstile.render(turnstileContainer, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback(token) {
+            captchaToken = token;
+            setGuestbookStatus('확인됐어요. 첫 번째 행성을 남길 수 있습니다.');
+          },
+          'expired-callback'() {
+            captchaToken = null;
+            setGuestbookStatus('확인이 만료됐어요. 다시 확인해주세요.', 'error');
+          },
+          'error-callback'() {
+            captchaToken = null;
+            setGuestbookStatus('확인 위젯을 불러오지 못했어요. 새로고침 후 다시 시도해주세요.', 'error');
+          }
+        });
+      }
+
+      async function fetchGuestbookEntries() {
+        const { count, error: countError } = await supabaseClient
+          .from('guestbook_entries')
+          .select('id', { count: 'exact', head: true });
+        if (countError) throw countError;
+        totalEntryCount = count || 0;
+
+        // Keep the display light even when the public guestbook grows large.
+        const { data, error } = await supabaseClient
+          .from('guestbook_entries')
+          .select('id,nickname,message,created_at')
+          .order('created_at', { ascending: false })
+          .limit(500);
+        if (error) throw error;
+        visitorEntries = (data || []).reverse();
+        updateGuestbookView();
+      }
+
+      async function initializeGuestbook() {
+        guestbookSubmit.disabled = true;
+        try {
+          supabaseClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+            auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: false }
+          });
+          await fetchGuestbookEntries();
+          const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+          if (sessionError) throw sessionError;
+          hasAnonymousSession = Boolean(sessionData.session?.user);
+          mountTurnstile();
+          guestbookSubmit.disabled = false;
+          setGuestbookStatus(totalEntryCount ? '은하에 연결됐어요. 행성을 남겨보세요.' : '은하가 비어 있어요. 첫 번째 행성을 남겨보세요.');
+        } catch (error) {
+          console.error('Guestbook connection failed:', error);
+          setGuestbookStatus('방명록 저장소가 아직 준비되지 않았어요. Supabase 설정을 완료한 뒤 새로고침해주세요.', 'error');
+          turnstileContainer.hidden = true;
+        }
+      }
+
+      guestbookForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!supabaseClient) return;
+        const nickname = guestNickname.value.trim() || '익명의 별';
+        const message = guestMessage.value.trim();
+        if (!message || message.length > 140 || nickname.length > 24) {
+          setGuestbookStatus('별명은 24자, 메시지는 140자 이내로 적어주세요.', 'error');
+          return;
+        }
+        guestbookSubmit.disabled = true;
+        setGuestbookStatus('새 행성을 궤도에 올리는 중…');
+        try {
+          let { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+          if (sessionError) throw sessionError;
+          if (!sessionData.session) {
+            if (!captchaToken) throw new Error('먼저 자동 입력 방지 확인을 완료해주세요.');
+            const signIn = await supabaseClient.auth.signInAnonymously({ options: { captchaToken } });
+            if (signIn.error) throw signIn.error;
+            sessionData = { session: signIn.data.session };
+            hasAnonymousSession = true;
+            captchaToken = null;
+            if (turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
+            turnstileContainer.hidden = true;
+          }
+          const ownerId = sessionData.session?.user?.id;
+          if (!ownerId) throw new Error('익명 방문자 계정을 만들지 못했어요. 새로고침 후 다시 시도해주세요.');
+          const { data: entry, error } = await supabaseClient
+            .from('guestbook_entries')
+            .insert({ owner_id: ownerId, nickname, message })
+            .select('id,nickname,message,created_at')
+            .single();
+          if (error) {
+            if (error.code === '23505') throw new Error('이 브라우저에서는 이미 행성을 남겼어요. 기존 행성을 찾아보세요.');
+            throw error;
+          }
+          visitorEntries.push(entry);
+          if (visitorEntries.length > 500) visitorEntries.shift();
+          totalEntryCount += 1;
+          updateGuestbookView();
+          guestNickname.disabled = true;
+          guestMessage.disabled = true;
+          guestbookSubmit.disabled = true;
+          setGuestbookStatus('행성이 추가됐어요. 고마워요!', 'success');
+        } catch (error) {
+          console.error('Guestbook submission failed:', error);
+          guestbookSubmit.disabled = false;
+          const text = error.message?.includes('guestbook_entries')
+            ? '방명록 테이블이 아직 없어요. 준비 안내의 SQL을 Supabase에서 실행해주세요.'
+            : (error.message || '저장하지 못했어요. 잠시 뒤 다시 시도해주세요.');
+          setGuestbookStatus(text, 'error');
+        }
+      });
 
       function animate(now) {
         if (!lastTime) lastTime = now;
@@ -303,6 +570,7 @@
         }
       });
       resize();
+      initializeGuestbook();
       requestAnimationFrame(animate);
     })();
   </script>
