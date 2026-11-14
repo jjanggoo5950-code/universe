@@ -29,3 +29,5 @@ The real-time WebSocket subscribes to Samsung Electronics, SK hynix, NAVER, and 
 - The `/health` response includes the latest WebSocket tick and daily-snapshot refresh results. Daily quote dates come from KIS daily bars, rather than the time the Worker fetched them.
 - Validate that the KIS account's API terms permit displaying the feed publicly before opening the league to visitors.
 
+
+운영/장애 처리와 검증: [docs/OPERATIONS.md](../docs/OPERATIONS.md).

@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
+  <meta name="campus-release" content="20261115-resilience">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090b10">
   <meta name="description" content="한국·미국 주식으로 겨루는 대학생 모의투자 리그. 1,000만원으로 시작해 학교와 개인의 수익률을 쌓아보세요.">
@@ -261,6 +262,17 @@
       .footer { flex-direction: column; gap: 5px; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  
+    [hidden] { display:none !important; }
+    .hero { padding:28px 0 22px; }
+    .hero h1 { font-size:clamp(25px, 4vw, 38px); }
+    .hero .kicker, .brand-sub, .currency-unit { display:none; }
+    .hero-copy { max-width:760px; margin-top:8px; }
+    .holding { grid-template-columns:minmax(0,1fr) auto; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    button:focus-visible, input:focus-visible { outline:2px solid var(--lime); outline-offset:3px; }
+    #market-view .trade-panel { position:sticky; top:16px; align-self:start; }
+    @media(max-width:700px) { #market-view .trade-panel { position:static; } .top-actions { display:none; } .nav { overflow-x:auto; } }
   </style>
 </head>
 <body>
@@ -286,7 +298,7 @@
         <button data-view="records">명예의 전당</button>
       </nav>
       <div class="top-actions">
-        <span class="season-chip">SEASON 01 · OPEN</span>
+        
         <span class="data-chip"><span id="data-mode">가상 투자</span></span>
       </div>
     </header>
@@ -294,22 +306,23 @@
     <section class="hero">
       <div>
         <p class="kicker">UNIVERSITY INVESTMENT LEAGUE · 2026</p>
-        <h1>우리 학교의 투자 실력을<br>수익률로 증명하세요.</h1>
+        <h1>우리 학교의 투자 리그</h1>
         <p class="hero-copy">모든 참가자는 가상자금 <strong>₩10,000,000</strong>으로 출발합니다. 한국·미국 주식을 사고팔고, 달러로 환전해 개인 포트폴리오와 학교 순위를 만들어보세요.</p>
       </div>
-      <div class="hero-aside"><strong>₩10,000,000</strong>가상 투자금 · 실제 거래 없음</div>
+      
     </section>
 
-    <div class="notice" id="data-notice" role="status">
+    <div class="notice" id="data-notice" role="status" hidden>
       <span class="notice-icon">◎</span>
       <span id="data-notice-copy"><strong>가상 투자 게임</strong> — 가격은 실제 시세와 다를 수 있으며 거래는 게임 계좌에만 반영됩니다.</span>
     </div>
 
+    <div id="pending-action" class="notice" hidden><span id="pending-copy"></span><button id="retry-pending" class="secondary" type="button">이전 요청 확인</button></div>
     <section id="dashboard-view" class="view active">
       <div class="stats">
-        <article class="stat"><div class="stat-label">MY TOTAL ASSETS</div><div class="stat-value" id="stat-assets">₩10,000,000</div><div class="stat-sub">현금 + 보유 자산 평가액</div></article>
-        <article class="stat"><div class="stat-label">MY RETURN</div><div class="stat-value" id="stat-return">0.00%</div><div class="stat-sub" id="stat-profit">수익금 ₩0</div></article>
-        <article class="stat"><div class="stat-label">MY UNIVERSITY</div><div class="stat-value" id="stat-school">참가 전</div><div class="stat-sub">학교별 합산 수익금 · 평균 수익률</div></article>
+        <article class="stat"><div class="stat-label">총 자산</div><div class="stat-value" id="stat-assets">₩10,000,000</div><div class="stat-sub">현금 + 보유 자산 평가액</div></article>
+        <article class="stat"><div class="stat-label">내 수익률</div><div class="stat-value" id="stat-return">0.00%</div><div class="stat-sub" id="stat-profit">수익금 ₩0</div></article>
+        <article class="stat"><div class="stat-label">내 학교</div><div class="stat-value" id="stat-school">참가 전</div><div class="stat-sub">학교별 합산 수익금 · 평균 수익률</div></article>
         <article class="stat"><div class="stat-label">USD / KRW</div><div class="stat-value" id="stat-fx">₩1,380</div><div class="stat-sub" id="stat-fx-sub">예시 환율 · 게임용</div></article>
       </div>
 
@@ -330,21 +343,21 @@
           <section class="card">
             <div class="card-heading">
               <div><h2 class="card-title">대학 리그 순위</h2><p class="card-description">학교 수익금 합계와 참가자 평균 수익률로 겨룹니다.</p></div>
-              <span class="tiny-label">SCHOOL LEADERBOARD</span>
+              
             </div>
             <div id="school-leaderboard" class="leader-list"></div>
                       </section>
           <section class="card">
             <div class="card-heading">
               <div><h2 class="card-title">개인 수익률 명예의 전당</h2><p class="card-description">시즌 최고 수익률과 가장 낮은 수익률을 기록한 참가자.</p></div>
-              <span class="tiny-label">PLAYER RECORDS</span>
+              
             </div>
             <div id="hall-of-fame" class="halls"></div>
           </section>
         </div>
         <aside class="stack right-column">
           <section class="join-card" id="join-card">
-            <div class="card-heading" style="margin-bottom:0"><div><h2 class="card-title">리그 참가</h2><p class="card-description">카카오 로그인 후 별명과 학교를 등록해 참가하세요.</p></div><span class="tiny-label">FREE</span></div>
+            <div class="card-heading" style="margin-bottom:0"><div><h2 class="card-title">리그 참가</h2><p class="card-description">카카오 로그인 후 별명과 학교를 등록해 참가하세요.</p></div></div>
             <p class="join-copy" id="join-copy">카카오 로그인 후 별명과 학교를 정하면 가상 계좌가 만들어집니다.</p>
             <form class="join-form" id="join-form">
               <label class="field">별명<input id="nickname" maxlength="20" placeholder="예: 투자하는 고래" aria-describedby="nickname-check" required><span id="nickname-check" class="nickname-check" aria-live="polite">별명은 전국 리그에서 중복될 수 없어요.</span></label>
@@ -361,11 +374,11 @@
           </section>
           <section class="card hidden" id="profile-card">
             <div class="card-heading"><div><h2 class="card-title">내 참가 정보</h2><p class="card-description">내 별명과 학교</p></div></div>
-            <div class="profile-card"><div class="profile-left"><span class="profile-avatar">✦</span><div style="min-width:0"><div class="profile-name" id="profile-name"></div><div class="profile-school" id="profile-school"></div></div></div><div class="profile-actions"><button class="secondary" id="edit-profile" type="button">수정</button><button class="secondary" id="auth-signout" type="button">로그아웃</button></div></div>
+            <div class="profile-card"><div class="profile-left"><span class="profile-avatar">✦</span><div style="min-width:0"><div class="profile-name" id="profile-name"></div><div class="profile-school" id="profile-school"></div></div></div><div class="profile-actions"><button class="secondary" id="edit-profile" type="button">별명 수정</button><button class="secondary" id="auth-signout" type="button">로그아웃</button></div></div>
             <p class="account-status" id="account-link-status"></p>
           </section>
           <section class="card">
-            <div class="card-heading"><div><h2 class="card-title">환전소</h2><p class="card-description">미국 주식을 사려면 먼저 원화를 달러로 바꾸세요.</p></div><span class="tiny-label">FX DESK</span></div>
+            <div class="card-heading"><div><h2 class="card-title">환전소</h2><p class="card-description">미국 주식을 사려면 먼저 원화를 달러로 바꾸세요.</p></div></div>
             <div class="currency-panel">
               <div><div class="currency-label">보유 원화</div><div class="currency-amount" id="cash-krw">₩10,000,000</div><div class="currency-unit">KRW WALLET</div></div>
               <div class="swap">⇄</div>
@@ -376,10 +389,10 @@
               <input id="exchange-amount" type="number" min="1000" step="1000" placeholder="환전할 원화" aria-label="환전할 원화" required>
               <button class="secondary" id="exchange-submit" type="submit">USD로 환전</button>
             </form>
-            <p class="fx-foot">환율 변동은 미국 주식의 원화 평가액에도 반영됩니다. 실제 환전이나 금융 거래는 발생하지 않아요.</p>
+            <p class="fx-foot">환율 변동은 미국 주식의 원화 평가액에도 반영됩니다.</p>
           </section>
           <section class="card">
-            <div class="card-heading"><div><h2 class="card-title">내 보유 종목</h2><p class="card-description">보유 수량과 평가 손익</p></div><button class="secondary" data-go="portfolio" type="button">전체 보기</button></div>
+            <div class="card-heading"><div><h2 class="card-title">내 보유 종목</h2><p class="card-description">보유 수량과 평가 금액</p></div><button class="secondary" data-go="portfolio" type="button">전체 보기</button></div>
             <div id="mini-holdings" class="holdings"></div>
           </section>
         </aside>
@@ -387,20 +400,20 @@
     </section>
 
     <section id="market-view" class="view">
-      <div class="view-head"><div><h2>Market desk</h2><p>한국·미국 상장 주식을 검색하고 가상으로 매매해보세요.</p></div><span class="data-chip">종목 시세</span></div>
+      <div class="view-head"><div><h2>주식 마켓</h2><p>한국·미국 상장 주식을 검색하고 가상으로 매매해보세요.</p></div><span class="data-chip">종목 시세</span></div>
       <section class="card" style="margin-bottom:15px">
-        <div class="card-heading"><div><h2 class="card-title">전체 종목 검색</h2><p class="card-description">전체 종목 목록에서 검색한 뒤 가격을 불러옵니다. 매수·매도는 게임 속 가상 계좌에만 반영됩니다.</p></div><span class="tiny-label" id="stock-catalog-count">목록 로딩 전</span></div>
+        <div class="card-heading"><div><h2 class="card-title">전체 종목 검색</h2><p class="card-description">종목명이나 티커로 한국·미국 주식을 찾으세요.</p></div><span class="tiny-label" id="stock-catalog-count">목록 로딩 전</span></div>
         <div class="stock-search"><input id="stock-search" type="search" maxlength="60" placeholder="종목명 또는 티커 검색 · 예: 삼성전자, AAPL, Microsoft" autocomplete="off" aria-label="종목명 또는 티커 검색"><select id="stock-search-market" aria-label="검색 시장"><option value="ALL">한국 + 미국</option><option value="KR">한국주식</option><option value="US">미국주식</option></select></div>
         <p class="stock-search-status" id="stock-search-status" role="status">종목명이나 티커를 입력하세요. 장이 닫혀 있으면 최근 종가를 불러오며 주문은 잠깁니다.</p>
         <div class="stock-results" id="stock-search-results" aria-live="polite"></div>
       </section>
       <div class="layout">
         <section class="card">
-          <div class="card-heading"><div><h2 class="card-title">종목 목록</h2><p class="card-description">검색한 종목의 시세입니다. 매수·매도는 게임 속 가상 계좌에서만 처리됩니다.</p></div><div class="market-tabs"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div></div>
+          <div class="card-heading"><div><h2 class="card-title">종목 목록</h2><p class="card-description">관심 종목과 보유 종목의 가격을 확인하세요.</p></div><div class="market-tabs"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div></div>
           <div style="overflow-x:auto"><table class="market-table"><thead><tr><th>종목</th><th class="price-heading">시세</th><th>변동률</th><th>시장</th><th></th></tr></thead><tbody id="market-rows-secondary"></tbody></table></div>
         </section>
         <aside class="card trade-panel">
-          <div class="card-heading"><div><h2 class="card-title">주문하기</h2><p class="card-description">보유 현금 내에서만 거래됩니다.</p></div><span class="tiny-label">PAPER ORDER</span></div>
+          <div class="card-heading"><div><h2 class="card-title">주문하기</h2><p class="card-description">보유 현금 내에서만 거래됩니다.</p></div></div>
           <div class="trade-symbol"><span id="trade-badge" class="trade-big-badge">—</span><div><div class="asset-name" id="trade-name">종목을 선택하세요</div><div class="trade-price" id="trade-price">시장 목록의 주문 버튼을 눌러주세요.</div></div></div>
           <div class="segmented"><button class="buy active" data-side="buy" type="button">매수</button><button class="sell" data-side="sell" type="button">매도</button></div>
           <label class="field">주문 수량<input id="order-quantity" type="number" min="1" step="1" value="1"></label>
@@ -412,7 +425,7 @@
     </section>
 
     <section id="portfolio-view" class="view">
-      <div class="view-head"><div><h2>My portfolio</h2><p>1,000만원으로 시작한 가상 계좌와 매매 기록.</p></div><span class="data-chip"><i class="data-dot"></i> PAPER ACCOUNT</span></div>
+      <div class="view-head"><div><h2>내 투자</h2><p>1,000만원으로 시작한 가상 계좌와 매매 기록.</p></div><span class="data-chip"><i class="data-dot"></i> PAPER ACCOUNT</span></div>
       <div class="subgrid">
         <section class="card">
           <div class="card-heading"><div><h2 class="card-title">자산 현황</h2><p class="card-description">미국 종목은 현재 게임 환율로 원화 환산합니다.</p></div></div>
@@ -420,7 +433,7 @@
           <div class="portfolio-meta"><span>수익률 <strong id="portfolio-return">0.00%</strong></span><span>수익금 <strong id="portfolio-profit">₩0</strong></span><span>USD/KRW <strong id="portfolio-fx">₩1,380</strong></span></div>
           <div class="currency-panel" style="margin-top:18px"><div><div class="currency-label">CASH · KRW</div><div class="currency-amount" id="portfolio-krw">₩10,000,000</div></div><div class="swap">+</div><div><div class="currency-label">CASH · USD</div><div class="currency-amount" id="portfolio-usd">$0.00</div></div></div>
         </section>
-        <section class="card"><div class="card-heading"><div><h2 class="card-title">보유 종목</h2><p class="card-description">평가 손익은 현재 게임 기준 가격으로 계산됩니다.</p></div></div><div id="portfolio-holdings" class="holdings"></div></section>
+        <section class="card"><div class="card-heading"><div><h2 class="card-title">보유 종목</h2><p class="card-description">보유 종목의 원화 평가 금액입니다.</p></div></div><div id="portfolio-holdings" class="holdings"></div></section>
       </div>
       <section class="card" style="margin-top:15px">
         <div class="card-heading"><div><h2 class="card-title">최근 거래</h2><p class="card-description">가상 거래 내역</p></div></div>
@@ -429,7 +442,7 @@
     </section>
 
     <section id="records-view" class="view">
-      <div class="view-head"><div><h2>Hall of fame</h2><p>시즌 최고·최저 수익률과 학교별 순위 기록.</p></div><span class="data-chip"><i class="data-dot"></i> SEASON 01</span></div>
+      <div class="view-head"><div><h2>명예의 전당</h2><p>시즌 최고·최저 수익률과 학교별 순위 기록.</p></div><span class="data-chip"><i class="data-dot"></i> SEASON 01</span></div>
       <section class="card">
         <div class="card-heading"><div><h2 class="card-title">이번 시즌 개인 기록</h2><p class="card-description">최고와 최저 기록은 참가자 전체의 수익률을 비교합니다.</p></div></div>
         <div id="hall-of-fame-full" class="halls"></div>
@@ -472,7 +485,8 @@
         { symbol:"MSFT", code:"NASDAQ", name:"Microsoft", market:"US", currency:"USD", price:416.30, change:-0.31, badge:"M", freshness:"demo", tradable:false, asOf:null },
         { symbol:"TSLA", code:"NASDAQ", name:"Tesla", market:"US", currency:"USD", price:338.70, change:-1.08, badge:"T", freshness:"demo", tradable:false, asOf:null }
       ];
-      let state = loadState();
+      let state = { profile:null, wallet:{krw:STARTING_CAPITAL,usd:0}, trades:[], holdings:[], joinedAt:null };
+      let actionBusy = false, editingProfile = false, overviewRequest = null, connectionMessage = "", fxAsOf = null;
       let selectedAsset = assets[0];
       let selectedSide = "buy";
       let activeMarket = "ALL";
@@ -484,18 +498,50 @@
       let remoteClient = null, remoteMode = false, remoteSummary = null, authUser = null, authGateMessage = "";
       let fxFreshness = "demo", fxTradable = false;
 
-      function loadState() {
-        try {
-          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-          if (parsed && parsed.wallet && Array.isArray(parsed.trades)) return parsed;
-        } catch (_) {}
-        return { profile:null, wallet:{ krw:STARTING_CAPITAL, usd:0 }, trades:[], joinedAt:null };
+      // Account data is authoritative in the database, never in browser storage.
+      function saveState() {}
+      function setConnectionMessage(message) {
+        connectionMessage = message;
+        document.getElementById("data-notice").hidden = !message;
+        document.getElementById("data-notice-copy").textContent = message;
       }
-      function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      function safeMessage(error) {
+        const message = String(error?.message || "");
+        return /^[가-힣]/.test(message) && message.length < 150 ? message : "연결이 원활하지 않아요. 잠시 후 다시 시도해주세요.";
+      }
+      async function submitAction(kind, payload) {
+        if (!remoteClient || !hasKakaoIdentity(authUser) || !state.profile) throw new Error("로그인 후 리그에 참가해주세요.");
+        const key = "campus-pending:" + authUser.id;
+        let pending;
+        try { pending = JSON.parse(localStorage.getItem(key)); } catch {}
+        if (pending && (pending.kind !== kind || JSON.stringify(pending.payload) !== JSON.stringify(payload))) {
+          throw new Error("이전 요청의 결과를 확인해야 해요. 같은 수량과 종목으로 다시 눌러 확인해주세요.");
+        }
+        pending ||= { id:crypto.randomUUID(), kind, payload };
+        // Persist the receipt ID before sending; a lost response can safely be retried after reload.
+        try { localStorage.setItem(key, JSON.stringify(pending)); }
+        catch { throw new Error("브라우저 저장 공간을 사용할 수 없어 주문할 수 없어요."); }
+        const { data, error } = await remoteClient.rpc("submit_campus_action", {
+          p_request_id:pending.id, p_kind:kind, p_payload:payload,
+        });
+        if (error) {
+          if (error.code && !["57014", "08006"].includes(error.code) && !String(error.code).startsWith("PGRST")) localStorage.removeItem(key);
+          throw error;
+        }
+        localStorage.removeItem(key);
+        return data;
+      }
+      async function runAction(work) {
+        if (actionBusy) return;
+        actionBusy = true; render();
+        try { await work(); }
+        catch (error) { toast(safeMessage(error)); }
+        finally { actionBusy = false; render(); }
+      }
       function formatKRW(n) { return "₩" + Math.round(n || 0).toLocaleString("ko-KR"); }
       function formatUSD(n) { return "$" + Number(n || 0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
       function quoteContext(asset) {
-        if (asset.freshness === "demo") return "예시 시세";
+        if (asset.freshness === "demo") return "시세 대기";
         if (asset.freshness === "real_time") return "실시간";
         if (asset.freshness === "end_of_day") {
           const date = asset.asOf ? new Date(asset.asOf).toLocaleDateString("ko-KR", { timeZone:"Asia/Seoul", year:"numeric", month:"2-digit", day:"2-digit" }) : "최근 거래일";
@@ -505,9 +551,9 @@
         return "참고 시세";
       }
       function quoteExpired(asset) {
-        if (!asset || asset.freshness !== "real_time" || !asset.asOf) return false;
+        if (!asset || asset.freshness === "demo" || !asset.asOf) return true;
         const asOf = Date.parse(asset.asOf);
-        return !Number.isFinite(asOf) || Date.now() - asOf > 120000;
+        return !Number.isFinite(asOf) || asOf > Date.now() + 60000 || Date.now() - asOf > (asset.freshness === "end_of_day" ? 7*86400000 : 120000);
       }
       async function ensureStockCatalog(market) {
         const markets = market === "ALL" ? ["KR","US"] : [market];
@@ -600,6 +646,7 @@
         }
       }
       function registerQuoteAsset(quote, listing = null) {
+        if (!quote || !Number.isFinite(Number(quote.price)) || Number(quote.price) <= 0) return null;
         let asset = assets.find(item => item.symbol === quote.symbol);
         if (!asset) {
           asset = {
@@ -636,7 +683,7 @@
         const needed = new Set([
           ...DEFAULT_STOCK_SYMBOLS,
           ...pinnedSearchSymbols,
-          ...state.trades.map(trade => trade.symbol),
+          ...(state.holdings || []).map(holding => holding.symbol),
         ]);
         remoteSummary.quotes.forEach(quote => {
           if (needed.has(quote.symbol)) registerQuoteAsset(quote);
@@ -660,11 +707,13 @@
             market:item.market, symbol:item.symbol, exchange:item.exchange, name:item.name,
           });
           const response = await fetch(QUOTE_WORKER_URL + "/quote?" + params.toString(), {
-            headers:{ Accept:"application/json" }, cache:"no-store",
+            headers:{ Accept:"application/json" }, cache:"no-store", signal:AbortSignal.timeout(30000),
           });
           const quote = await response.json();
-          if (!response.ok) throw new Error("시세를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+          if (!response.ok) throw new Error(response.status === 429 || response.status === 503 ? "조회가 몰리고 있어요. 15초 후 다시 시도해주세요." : "시세를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
           const asset = registerQuoteAsset(quote, item);
+          if (!asset) throw new Error("유효한 시세가 도착하지 않았어요.");
+          if (remoteSummary) remoteSummary.quotes = [...(remoteSummary.quotes || []).filter(q => q.symbol !== quote.symbol), quote];
           pinSearchSymbol(item.symbol);
           selectedAsset = asset;
           activeMarket = item.market;
@@ -678,11 +727,11 @@
             ? item.name + " 최근 종가를 불러왔어요. 장이 열리면 다시 조회해 가상 거래할 수 있습니다."
             : item.name + " 현재가를 불러왔어요. 이 가격은 가상 거래에만 사용됩니다.";
           renderStockSearch();
-          toast(item.name + " 시세를 불러왔어요. 실제 주문 없이 가상 거래합니다.");
+          toast(quote.stale ? "마지막 확인 가격입니다. 갱신 후 주문해주세요." : item.name + " 시세를 불러왔어요.");
         } catch (error) {
           button.disabled = false;
           button.textContent = "다시 조회";
-          status.textContent = "시세를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
+          status.textContent = safeMessage(error);
           toast(status.textContent);
         }
       }
@@ -770,34 +819,23 @@
         toastTimer = setTimeout(() => node.classList.remove("show"), 2600);
       }
       function signedShares(symbol) {
-        return state.trades.reduce((total, trade) => {
-          if (trade.symbol !== symbol) return total;
-          return total + (trade.side === "buy" ? trade.quantity : -trade.quantity);
-        }, 0);
-      }
-      function positionCost(symbol) {
-        let shares = 0, cost = 0;
-        state.trades.filter(t => t.symbol === symbol).forEach(t => {
-          if (t.side === "buy") { cost += t.price * t.quantity; shares += t.quantity; }
-          else if (shares > 0) { const avg = cost / shares; cost -= avg * Math.min(t.quantity, shares); shares -= Math.min(t.quantity, shares); }
-        });
-        return { shares, cost };
+        return Number((state.holdings || []).find(h => h.symbol === symbol)?.quantity || 0);
       }
       function metrics() {
         const positions = assets.map(asset => {
-          const basis = positionCost(asset.symbol);
+          
           const shares = signedShares(asset.symbol);
           const valueNative = shares * asset.price;
           const valueKrw = asset.currency === "USD" ? valueNative * USDKRW : valueNative;
-          const costKrw = asset.currency === "USD" ? basis.cost * USDKRW : basis.cost;
-          return { asset, shares, valueNative, valueKrw, costKrw, pnl:valueKrw-costKrw };
+          
+          return { asset, shares, valueNative, valueKrw };
         }).filter(item => item.shares > 0);
         const holdingsKrw = positions.reduce((sum, p) => sum + p.valueKrw, 0);
         const total = state.wallet.krw + state.wallet.usd * USDKRW + holdingsKrw;
         const profit = total - STARTING_CAPITAL;
         return { positions,total,profit,returnPct:profit/STARTING_CAPITAL*100 };
       }
-      function displayPrice(asset) { return asset.currency === "USD" ? formatUSD(asset.price) : formatKRW(asset.price); }
+      function displayPrice(asset) { if (asset.freshness === "demo") return "—"; return asset.currency === "USD" ? formatUSD(asset.price) : formatKRW(asset.price); }
       function renderAssetRows(targetId) {
         const tbody = document.getElementById(targetId);
         const visible = assets.filter(a =>
@@ -808,7 +846,7 @@
         visible.forEach(asset => {
           const tr = document.createElement("tr");
           const changeClass = signedClass(asset.change);
-          const orderDisabled = ((!asset.tradable && asset.freshness !== "demo") || (remoteMode && !asset.tradable) || quoteExpired(asset));
+          const orderDisabled = !asset.tradable || quoteExpired(asset);
           tr.innerHTML = '<td><div class="asset"><span class="asset-badge">' + escapeHTML(asset.badge) + '</span><span><span class="asset-name">' + escapeHTML(asset.name) + '</span><span class="asset-meta">' + escapeHTML(asset.symbol) + ' · ' + asset.code + '</span></span></div></td><td class="quote-price">' + displayPrice(asset) + '<span class="quote-context">' + escapeHTML(quoteContext(asset)) + '</span></td><td class="' + changeClass + '">' + formatReturn(asset.change) + '</td><td>' + (asset.market === "KR" ? "한국" : "미국") + '</td><td><button class="table-action" data-symbol="' + asset.symbol + '"' + (orderDisabled ? ' disabled title="장 마감 참고 가격은 주문할 수 없습니다."' : '') + '>주문</button></td>';
           tbody.append(tr);
         });
@@ -826,7 +864,7 @@
           const html = schools.length ? schools.map((school,index) =>
             '<div class="leader-row"><span class="rank ' + (index===0 ? "first" : "") + '">' + String(index+1).padStart(2,"0") + '</span><div><div class="leader-school">' + escapeHTML(school.school) + '</div><div class="leader-count">' + Number(school.players).toLocaleString("ko-KR") + '명 참가</div></div><div class="leader-score"><div class="leader-profit ' + signedClass(school.profit_krw) + '">' + (school.profit_krw >= 0 ? "+" : "−") + formatKRW(Math.abs(school.profit_krw)) + '</div><div class="leader-return ' + signedClass(school.avg_return_pct) + '">평균 ' + formatReturn(school.avg_return_pct) + '</div></div></div>'
           ).join("") : '<div class="empty">아직 참가한 학교가 없습니다.<br>첫 번째 학교가 되어보세요.</div>';
-          nodes.forEach(node => { node.innerHTML = html; });
+          nodes.forEach((node,index) => { node.innerHTML = html; if (index === 0) [...node.children].slice(5).forEach(row => row.remove()); });
           document.getElementById("stat-school").textContent = state.profile ? state.profile.school : (schools[0] ? schools[0].school : "참가 전");
           return;
         }
@@ -858,7 +896,7 @@
           node.innerHTML = '<div class="empty">아직 보유한 종목이 없어요.</div>';
           return;
         }
-        node.innerHTML = positions.map(p => '<div class="holding"><div><div class="holding-name">' + escapeHTML(p.asset.name) + '</div><div class="holding-shares">' + p.shares + '주 · ' + p.asset.symbol + '</div></div><div class="holding-value">' + formatKRW(p.valueKrw) + '</div><div class="holding-pnl ' + signedClass(p.pnl) + '">' + (p.pnl >= 0 ? "+" : "−") + formatKRW(Math.abs(p.pnl)) + '</div></div>').join("");
+        node.innerHTML = positions.map(p => '<div class="holding"><div><div class="holding-name">' + escapeHTML(p.asset.name) + '</div><div class="holding-shares">' + p.shares + '주 · ' + p.asset.symbol + '</div></div><div class="holding-value">' + formatKRW(p.valueKrw) + '</div></div>').join("");
       }
       function renderHistory() {
         const node = document.getElementById("history-rows");
@@ -889,7 +927,7 @@
         const remoteQuote = remoteMode && remoteSummary ? (remoteSummary.quotes || []).find(q => q.symbol === selectedAsset.symbol) : null;
         const blockedByQuote = (remoteMode && (!remoteQuote || !remoteQuote.is_tradable || (selectedAsset.currency === "USD" && !fxTradable))) ||
           (!selectedAsset.tradable && selectedAsset.freshness !== "demo") || quoteExpired(selectedAsset);
-        submit.disabled = blockedByQuote;
+        submit.disabled = actionBusy || !state.profile || !hasKakaoIdentity(authUser) || !navigator.onLine || blockedByQuote || !Number.isInteger(quantity) || quantity < 1 || (selectedSide === "buy" ? wallet < amount : owned < quantity);
         submit.title = blockedByQuote ? "현재가가 확인된 종목만 가상 매매할 수 있습니다." : "";
         document.getElementById("trade-status").textContent = !state.profile
           ? "먼저 리그 참가 후 주문할 수 있습니다."
@@ -901,7 +939,7 @@
             ? "달러 잔액이 부족해요. 환전소에서 먼저 환전해주세요."
             : selectedSide === "sell" && owned < quantity
               ? "현재 보유 수량은 " + owned + "주입니다."
-              : "수수료 없는 가상 주문 · 예시 가격 기준";
+              : "수수료 없는 가상 주문";
       }
       function hasKakaoIdentity(user) {
         if (!user) return false;
@@ -921,7 +959,7 @@
         if (gate) gate.hidden = authenticated;
         if (shell) shell.toggleAttribute("inert", !authenticated);
         if (button) {
-          button.disabled = !remoteClient || !remoteMode || authenticated;
+          button.disabled = !remoteClient || authenticated;
           button.textContent = authUser && authUser.is_anonymous
             ? "기존 참가 기록을 카카오에 연결"
             : "카카오로 로그인";
@@ -945,7 +983,7 @@
       }
       async function connectKakaoAccount() {
         try {
-          if (!remoteClient || !remoteMode) throw new Error("지금은 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
+          if (!remoteClient) throw new Error("지금은 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
           const { data, error } = await remoteClient.auth.getSession();
           if (error) throw error;
           const user = data && data.session ? data.session.user : null;
@@ -973,33 +1011,40 @@
           toast(authGateMessage);
         }
       }
+      function renderPending() {
+        let pending;
+        try { pending = authUser && JSON.parse(localStorage.getItem("campus-pending:" + authUser.id)); } catch {}
+        document.getElementById("pending-action").hidden = !pending;
+        if (pending) document.getElementById("pending-copy").textContent = pending.kind === "order"
+          ? pending.payload.symbol + " " + pending.payload.quantity + "주 요청의 처리 결과를 확인해주세요."
+          : "이전 환전 요청의 처리 결과를 확인해주세요.";
+        document.getElementById("retry-pending").disabled = actionBusy;
+      }
+      document.getElementById("retry-pending").addEventListener("click", () => runAction(async () => {
+        const pending = JSON.parse(localStorage.getItem("campus-pending:" + authUser.id) || "null");
+        if (!pending) return;
+        await submitAction(pending.kind, pending.payload);
+        toast("이전 요청의 처리 결과를 확인했어요.");
+        await refreshRemotePortfolio();
+      }));
       function render() {
+        renderPending();
         const m = metrics();
         document.getElementById("data-mode").textContent = "가상 투자";
-        document.querySelectorAll(".price-heading").forEach(node => { node.textContent = allQuotesAreRealtime() ? "현재가" : anyQuotesHaveData() ? "참고 가격" : "예시 가격"; });
-        const notice = document.getElementById("data-notice-copy");
-        if (!remoteMode) {
-          notice.innerHTML = "<strong>가상 투자 게임</strong> — 가격은 실제 시세와 다를 수 있으며 거래는 게임 계좌에만 반영됩니다.";
-        } else if (!anyQuotesHaveData()) {
-          notice.innerHTML = "<strong>가격 정보 대기 중</strong> — 가격이 표시되는 종목만 거래할 수 있습니다.";
-        } else if (!allQuotesHaveData()) {
-          notice.innerHTML = "<strong>일부 종목 가격 정보 대기 중</strong> — 종목별 표시 시점을 확인한 뒤 거래하세요.";
-        } else if (allQuotesAreRealtime()) {
-          notice.innerHTML = "<strong>실시간 가격 반영 중</strong> — 매수·매도와 환전은 가상 계좌에만 반영됩니다.";
-        } else {
-          notice.innerHTML = "<strong>가격 기준 시점 안내</strong> — 종목마다 시세 지연 또는 장마감 기준이 다를 수 있습니다. 가격과 날짜를 확인하세요.";
-        }
+        document.querySelectorAll(".price-heading").forEach(node => { node.textContent = "가격 · 기준 시점"; });
+        setConnectionMessage(connectionMessage);
         document.getElementById("fx-label").textContent = "USD/KRW 환율";
-        document.getElementById("fx-freshness").textContent = "· " + ({ demo:"예시 환율", real_time:"실시간", end_of_day:"최근 거래일", delayed:"지연 시세" }[fxFreshness] || "환율");
-        document.getElementById("exchange-submit").disabled = remoteMode && !fxTradable;
+        document.getElementById("fx-freshness").textContent = "· " + ({ demo:"환율 확인 중", real_time:"실시간", end_of_day:"최근 거래일", delayed:"지연 시세" }[fxFreshness] || "환율");
+        document.getElementById("exchange-submit").disabled = actionBusy || !state.profile || !navigator.onLine || !fxTradable || quoteExpired({freshness:fxFreshness,asOf:fxAsOf});
+        document.querySelector("#join-form button[type=submit]").disabled = actionBusy;
         document.getElementById("stat-assets").textContent = formatKRW(m.total);
         document.getElementById("stat-return").textContent = formatReturn(m.returnPct);
         document.getElementById("stat-return").className = "stat-value " + signedClass(m.returnPct);
         document.getElementById("stat-profit").textContent = "수익금 " + (m.profit >= 0 ? "+" : "−") + formatKRW(Math.abs(m.profit));
         document.getElementById("stat-profit").className = "stat-sub " + signedClass(m.profit);
-        document.getElementById("stat-fx").textContent = formatKRW(USDKRW);
-        document.getElementById("stat-fx-sub").textContent = ({ demo:"예시 환율", real_time:"실시간 환율", end_of_day:"최근 거래일 환율", delayed:"지연 환율" }[fxFreshness] || "USD/KRW 환율");
-        document.getElementById("fx-display").textContent = "1 USD = " + formatKRW(USDKRW);
+        document.getElementById("stat-fx").textContent = fxFreshness === "demo" ? "—" : formatKRW(USDKRW);
+        document.getElementById("stat-fx-sub").textContent = ({ demo:"환율 확인 중", real_time:"실시간 환율", end_of_day:"최근 거래일 환율", delayed:"지연 환율" }[fxFreshness] || "USD/KRW 환율");
+        document.getElementById("fx-display").textContent = fxFreshness === "demo" ? "환율 확인 중" : "1 USD = " + formatKRW(USDKRW);
         document.getElementById("cash-krw").textContent = formatKRW(state.wallet.krw);
         document.getElementById("cash-usd").textContent = formatUSD(state.wallet.usd);
         document.getElementById("portfolio-total").textContent = formatKRW(m.total);
@@ -1010,10 +1055,10 @@
         document.getElementById("portfolio-fx").textContent = formatKRW(USDKRW);
         document.getElementById("portfolio-krw").textContent = formatKRW(state.wallet.krw);
         document.getElementById("portfolio-usd").textContent = formatUSD(state.wallet.usd);
-        document.getElementById("join-card").classList.toggle("hidden", Boolean(state.profile));
+        document.getElementById("join-card").classList.toggle("hidden", Boolean(state.profile) && !editingProfile);
         document.getElementById("profile-card").classList.toggle("hidden", !state.profile);
         const joinCopy = document.getElementById("join-copy");
-        if (joinCopy) joinCopy.textContent = "별명과 학교를 등록하고 가상자금 1,000만원으로 시작하세요.";
+        if (joinCopy) joinCopy.textContent = editingProfile ? "별명을 수정하세요. 참가 학교는 유지됩니다." : "별명과 학교를 등록하고 가상자금 1,000만원으로 시작하세요.";
         
         if (state.profile) {
           document.getElementById("profile-name").textContent = state.profile.nickname;
@@ -1074,39 +1119,21 @@
         const value = nicknameInput.value.trim();
         if (value.length >= 1 && value.length <= 20) checkNicknameAvailability(value);
       });
-      document.getElementById("join-form").addEventListener("submit", async event => {
+      document.getElementById("join-form").addEventListener("submit", event => {
         event.preventDefault();
-        const nickname = document.getElementById("nickname").value.trim();
-        const school = document.getElementById("school").value.trim();
-        if (!nickname) { nicknameInput.focus(); return; }
-        if (nickname.length > 20) { setNicknameCheck("별명은 1~20자로 입력해주세요.", "error"); nicknameInput.focus(); return; }
-        if (school.length < 2 || school.length > 80) { toast("참가할 학교를 찾아 선택해주세요."); openSchoolPicker(); return; }
-        if (remoteMode && remoteClient) {
-          try {
-            window.clearTimeout(nicknameCheckTimer);
-            const { data,error } = await remoteClient.auth.getSession();
-            if (error) throw error;
-            const user = data && data.session ? data.session.user : null;
-            if (!hasKakaoIdentity(user)) throw new Error("카카오 로그인을 먼저 완료해주세요.");
-            const available = await checkNicknameAvailability(nickname, user);
-            if (!available) { toast(document.getElementById("nickname-check").textContent || "이미 사용 중인 별명입니다."); nicknameInput.focus(); return; }
-            const joined = await remoteClient.rpc("join_campus_league", { p_nickname:nickname, p_school_name:school });
-            if (joined.error) throw joined.error;
-            await refreshRemotePortfolio();
-            await refreshRemoteOverview();
-            toast("리그에 참가했어요. 가상자금 1,000만원을 받았습니다.");
-            return;
-          } catch (error) {
-            toast(error.message && (error.message.includes("이미 사용 중인 별명") || error.message.includes("대학교 이름") || error.message.includes("로그인이 필요") || error.message.includes("카카오 로그인")) ? error.message : "참가 신청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.");
-            return;
-          }
-        }
-        state.profile = { nickname:nickname.slice(0,20), school:school.slice(0,80) };
-        state.joinedAt = new Date().toISOString();
-        state.wallet = { krw:STARTING_CAPITAL, usd:0 };
-        saveState();
-        render();
-        toast("환영합니다! 가상자금 1,000만원이 지급됐어요.");
+        runAction(async () => {
+          if (!remoteClient || !hasKakaoIdentity(authUser)) throw new Error("카카오 로그인 후 참가해주세요.");
+          const nickname = nicknameInput.value.trim();
+          const school = state.profile ? state.profile.school : document.getElementById("school").value.trim();
+          if (!nickname || nickname.length > 20) throw new Error("별명은 1~20자로 입력해주세요.");
+          if (school.length < 2 || school.length > 80) throw new Error("참가할 학교를 선택해주세요.");
+          if (!await checkNicknameAvailability(nickname, authUser)) throw new Error("별명 중복 확인을 완료해주세요.");
+          const result = await remoteClient.rpc("join_campus_league", { p_nickname:nickname, p_school_name:school });
+          if (result.error) throw result.error;
+          editingProfile = false;
+          await refreshRemotePortfolio();
+          toast("참가 정보를 저장했어요.");
+        });
       });
       document.getElementById("auth-gate-kakao").addEventListener("click", connectKakaoAccount);
       document.getElementById("auth-signout").addEventListener("click", async () => {
@@ -1116,85 +1143,59 @@
       });
       document.getElementById("edit-profile").addEventListener("click", () => {
         if (!state.profile) return;
-        const nickname = window.prompt("별명을 수정하세요.", state.profile.nickname);
-        if (nickname === null || !nickname.trim()) return;
-        const school = window.prompt("대학교 이름을 수정하세요.", state.profile.school);
-        if (school === null || !school.trim()) return;
-        state.profile = { nickname:nickname.trim().slice(0,20), school:school.trim().slice(0,80) };
-        saveState(); render(); toast("참가 정보가 수정됐어요.");
+        editingProfile = !editingProfile;
+        nicknameInput.value = state.profile.nickname;
+        chooseSchool(state.profile.school);
+        document.getElementById("open-school-picker").disabled = true;
+        document.querySelector("#join-form button[type=submit]").textContent = "별명 저장";
+        render(); nicknameInput.focus();
       });
-      document.getElementById("exchange-form").addEventListener("submit", async event => {
+      document.getElementById("exchange-form").addEventListener("submit", event => {
         event.preventDefault();
-        if (!state.profile) { toast("먼저 리그 참가를 눌러주세요."); return; }
-        const amount = Math.floor(Number(document.getElementById("exchange-amount").value));
-        if (!Number.isFinite(amount) || amount < 1000) { toast("최소 환전 금액은 ₩1,000입니다."); return; }
-        if (remoteMode && remoteClient) {
-          const { error } = await remoteClient.rpc("convert_campus_krw_to_usd", { p_krw_amount:amount });
-          if (error) { toast(error.message); return; }
+        runAction(async () => {
+          const amount = Number(document.getElementById("exchange-amount").value);
+          if (!Number.isInteger(amount) || amount < 1000) throw new Error("환전 금액을 1,000원 이상 정수로 입력해주세요.");
+          await submitAction("exchange", { amount });
           document.getElementById("exchange-amount").value = "";
-          await refreshRemotePortfolio();
-          toast("가상 계좌에서 원화를 환전했어요.");
-          return;
-        }
-        if (amount > state.wallet.krw) { toast("보유 원화보다 큰 금액은 환전할 수 없어요."); return; }
-        state.wallet.krw -= amount;
-        state.wallet.usd += amount / USDKRW;
-        document.getElementById("exchange-amount").value = "";
-        saveState(); render(); toast(formatKRW(amount) + "을 " + formatUSD(amount / USDKRW) + "로 환전했어요.");
+          toast("환전이 완료됐어요.");
+          try { await refreshRemotePortfolio(); } catch { setConnectionMessage("환전은 완료됐지만 잔액을 불러오지 못했어요. 잠시 후 갱신됩니다."); }
+        });
       });
-      document.getElementById("trade-submit").addEventListener("click", () => {
-        if (!state.profile) { goToView("dashboard"); document.getElementById("nickname").focus(); toast("리그 참가 정보를 먼저 입력해주세요."); return; }
-        const quantity = Math.floor(Number(document.getElementById("order-quantity").value));
-        if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100000) { toast("주문 수량을 확인해주세요."); return; }
-        if (remoteMode && remoteClient) {
-          remoteClient.rpc("execute_campus_order", { p_symbol:selectedAsset.symbol, p_side:selectedSide, p_quantity:quantity })
-            .then(async result => {
-              if (result.error) { toast(result.error.message); return; }
-              await refreshRemotePortfolio();
-              await refreshRemoteOverview();
-              toast("가상 주문이 처리됐어요.");
-            });
-          return;
-        }
-        const total = selectedAsset.price * quantity;
-        const walletKey = selectedAsset.currency === "USD" ? "usd" : "krw";
-        if (selectedSide === "buy") {
-          if (state.wallet[walletKey] < total) {
-            toast(selectedAsset.currency === "USD" ? "달러 잔액이 부족해요. 환전소를 이용해주세요." : "원화 잔액이 부족해요.");
-            return;
-          }
-          state.wallet[walletKey] -= total;
-        } else {
-          if (signedShares(selectedAsset.symbol) < quantity) { toast("매도할 보유 수량이 부족해요."); return; }
-          state.wallet[walletKey] += total;
-        }
-        state.trades.push({ symbol:selectedAsset.symbol, side:selectedSide, quantity, price:selectedAsset.price, currency:selectedAsset.currency, at:new Date().toISOString() });
-        saveState(); render();
-        toast((selectedSide === "buy" ? "매수" : "매도") + " 주문이 가상 계좌에 반영됐어요.");
-      });
+      document.getElementById("trade-submit").addEventListener("click", () => runAction(async () => {
+        const quantity = Number(document.getElementById("order-quantity").value);
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100000) throw new Error("주문 수량은 1~100,000 사이 정수로 입력해주세요.");
+        await submitAction("order", { symbol:selectedAsset.symbol, side:selectedSide, quantity });
+        toast("주문이 체결됐어요.");
+        try { await refreshRemotePortfolio(); } catch { setConnectionMessage("주문은 체결됐지만 잔액을 불러오지 못했어요. 잠시 후 갱신됩니다."); }
+      }));
       async function refreshRemotePortfolio() {
-        if (!remoteClient) return;
+        if (!remoteClient || !authUser) return;
+        const owner = authUser.id;
         const { data,error } = await remoteClient.rpc("get_my_campus_portfolio");
+        if (owner !== authUser?.id) return;
         if (error) throw error;
-        if (!data || !data.profile) return;
-        state.profile = { nickname:data.profile.nickname, school:data.profile.school };
-        state.wallet = { krw:Number(data.wallet.cash_krw), usd:Number(data.wallet.cash_usd) };
-        state.trades = (data.trades || []).map(t => ({ symbol:t.symbol, side:t.side, quantity:Number(t.quantity), price:Number(t.price), currency:t.currency, at:t.created_at })).reverse();
-        syncRemoteQuoteAssets();
-        USDKRW = Number(data.fx_krw || USDKRW);
-        remoteMode = true;
-        saveState();
-        render();
-        document.getElementById("profile-school").textContent = state.profile.school;
-        document.getElementById("join-card").classList.add("hidden");
+        applyRemotePortfolio(data);
       }
       async function refreshRemoteOverview() {
-        if (!remoteClient) return;
-        const { data,error } = await remoteClient.rpc("get_campus_league_overview");
-        if (error) throw error;
-        applyRemoteOverview(data);
+        if (overviewRequest) return overviewRequest;
+        overviewRequest = (async () => {
+          try {
+            const response = await fetch(QUOTE_WORKER_URL + "/overview", { signal:AbortSignal.timeout(12000) });
+            if (!response.ok) throw new Error("overview_unavailable");
+            const data = await response.json();
+            applyRemoteOverview(data);
+            setConnectionMessage(data.stale ? "연결을 복구하고 있어요. 마지막 확인한 순위와 가격을 표시합니다." : "");
+          } catch (error) { setConnectionMessage("연결이 지연되고 있어요. 마지막 확인한 정보를 표시합니다."); throw error; }
+          finally { overviewRequest = null; }
+        })();
+        return overviewRequest;
       }
       function applyRemoteOverview(data) {
+        if (!data || !Array.isArray(data.quotes)) return;
+        data.quotes = data.quotes.map(q => {
+          const previous = remoteSummary?.quotes?.find(p => p.symbol === q.symbol);
+          return previous && (Date.parse(previous.as_of) > Date.parse(q.as_of) || (previous.stale && previous.as_of === q.as_of)) ? previous : q;
+        });
         remoteSummary = data;
         remoteMode = true;
         syncRemoteQuoteAssets();
@@ -1202,15 +1203,19 @@
           if (quote.symbol === "USD/KRW") USDKRW = Number(quote.price);
           const asset = assets.find(item => item.symbol === quote.symbol);
           if (asset) { asset.price = Number(quote.price); asset.change = Number(quote.change_pct); asset.freshness = quote.freshness; asset.tradable = quote.is_tradable; asset.asOf = quote.as_of || null; }
-          if (quote.symbol === "USD/KRW") { fxFreshness = quote.freshness; fxTradable = quote.is_tradable; }
+          if (quote.symbol === "USD/KRW") { fxFreshness = quote.freshness; fxTradable = quote.is_tradable; fxAsOf = quote.as_of; }
         });
         render();
       }
       function applyRemotePortfolio(data) {
-        if (!data || !data.profile) return;
+        if (!data || !data.profile) { window.CampusLeague.clearLocalDemo(); return; }
+        state.holdings = data.holdings || [];
         state.profile = { nickname:data.profile.nickname, school:data.profile.school };
         state.wallet = { krw:Number(data.wallet.cash_krw), usd:Number(data.wallet.cash_usd) };
         state.trades = (data.trades || []).map(t => ({ symbol:t.symbol, side:t.side, quantity:Number(t.quantity), price:Number(t.price), currency:t.currency, at:t.created_at })).reverse();
+        state.holdings.forEach(h => {
+          if (!assets.some(a => a.symbol === h.symbol)) registerQuoteAsset({ ...h, market:h.currency === "USD" ? "US" : "KR", freshness:"delayed", is_tradable:false, as_of:null });
+        });
         syncRemoteQuoteAssets();
         USDKRW = Number(data.fx_krw || USDKRW);
         remoteMode = true;
@@ -1219,16 +1224,20 @@
         document.getElementById("profile-school").textContent = state.profile.school;
       }
       window.CampusLeague = {
-        setClient(client) { remoteClient = client; updateAuthGate(); },
-        setAuthUser(user) { authUser = user || null; authGateMessage = ""; updateAuthGate(); },
+        setClient(client) { remoteClient = client; remoteMode = true; updateAuthGate(); },
+        setAuthUser(user) {
+          if (authUser?.id !== user?.id) { state = {profile:null,wallet:{krw:STARTING_CAPITAL,usd:0},trades:[],holdings:[]}; editingProfile=false; document.getElementById("open-school-picker").disabled=false; }
+          authUser = user || null; authGateMessage = ""; render();
+        },
+        setConnectionMessage,
         setAuthGateError(message) { authGateMessage = message || ""; updateAuthGate(); },
         refreshRemoteOverview,
         refreshRemotePortfolio,
         applyRemoteOverview,
         applyRemotePortfolio,
         clearLocalDemo() {
-          state = { profile:null, wallet:{ krw:STARTING_CAPITAL, usd:0 }, trades:[], joinedAt:null };
-          localStorage.removeItem(STORAGE_KEY);
+          state = { profile:null, wallet:{ krw:STARTING_CAPITAL, usd:0 }, trades:[], holdings:[], joinedAt:null };
+          try { localStorage.removeItem(STORAGE_KEY); } catch {}
           remoteMode = true;
           render();
         }
@@ -1241,46 +1250,35 @@
     const client = createClient(
       "https://cxgrrdxjrqxoayeknqkk.supabase.co",
       "sb_publishable_nFHzj2pQQcLhm_ghuDuKqQ_GS0xnVkQ",
-      { auth:{ autoRefreshToken:true, persistSession:true, detectSessionInUrl:true } }
+      { auth:{ autoRefreshToken:true, persistSession:true, detectSessionInUrl:true }, global:{ fetch:(url,options) => fetch(url,{...options,signal:options?.signal || AbortSignal.timeout(15000)}) } }
     );
-    if (window.CampusLeague) {
-      window.CampusLeague.setClient(client);
-      client.auth.onAuthStateChange((_event, session) => {
-        if (window.CampusLeague) window.CampusLeague.setAuthUser(session ? session.user : null);
-      });
-      const overview = await client.rpc("get_campus_league_overview");
-      if (overview.error && window.CampusLeague) window.CampusLeague.setAuthGateError("리그를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
-      if (!overview.error && window.CampusLeague) {
-        window.CampusLeague.applyRemoteOverview(overview.data);
-        const session = await client.auth.getSession();
-        if (window.CampusLeague) window.CampusLeague.setAuthUser(session.data && session.data.session ? session.data.session.user : null);
-        if (session.data && session.data.session) {
-          const portfolio = await client.rpc("get_my_campus_portfolio");
-          if (!portfolio.error && portfolio.data && portfolio.data.profile) window.CampusLeague.applyRemotePortfolio(portfolio.data);
-          else window.CampusLeague.clearLocalDemo();
-        } else window.CampusLeague.clearLocalDemo();
-        window.setInterval(async () => {
-          const latest = await client.rpc("get_campus_league_overview");
-          if (!latest.error && window.CampusLeague) window.CampusLeague.applyRemoteOverview(latest.data);
-          const activeSession = await client.auth.getSession();
-          if (activeSession.data && activeSession.data.session) {
-            const account = await client.rpc("get_my_campus_portfolio");
-            if (!account.error && window.CampusLeague) window.CampusLeague.applyRemotePortfolio(account.data);
-          }
-        }, 60000);
-        let quoteRefreshTimer = 0;
-        client.channel("campus-market-quotes")
-          .on("postgres_changes", { event:"*", schema:"public", table:"market_quotes" }, () => {
-            window.clearTimeout(quoteRefreshTimer);
-            quoteRefreshTimer = window.setTimeout(async () => {
-              if (window.CampusLeague) await window.CampusLeague.refreshRemoteOverview();
-            }, 500);
-          })
-          .subscribe();
-      } else if (window.CampusLeague) {
-        window.CampusLeague.setAuthGateError("리그를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+    const app = window.CampusLeague;
+    app.setClient(client);
+    let refreshBusy = false, timer, failures = 0, lastPortfolio = 0;
+    client.auth.onAuthStateChange((_event, session) => {
+      app.setAuthUser(session?.user || null);
+      lastPortfolio = 0;
+      setTimeout(refresh, 0);
+    });
+    async function refresh() {
+      clearTimeout(timer);
+      if (refreshBusy || document.hidden) return;
+      refreshBusy = true;
+      try {
+        if (!navigator.onLine) throw new Error("offline");
+        await app.refreshRemoteOverview();
+        if (Date.now() - lastPortfolio >= 60000) { await app.refreshRemotePortfolio(); lastPortfolio = Date.now(); }
+        failures = 0;
+      } catch { failures++; app.setConnectionMessage(navigator.onLine ? "연결을 복구하고 있어요. 마지막 확인한 정보를 표시합니다." : "인터넷 연결이 끊겼어요. 연결되면 자동으로 갱신합니다."); }
+      finally {
+        refreshBusy = false;
+        timer = setTimeout(refresh, Math.min(120000, 30000 * 2 ** failures) + Math.random() * 5000);
       }
     }
+    document.addEventListener("visibilitychange", () => { if (document.hidden) clearTimeout(timer); else refresh(); });
+    window.addEventListener("online", refresh);
+    window.addEventListener("offline", () => app.setConnectionMessage("인터넷 연결이 끊겼어요. 연결되면 자동으로 갱신합니다."));
+    refresh();
   </script>
 </body>
 </html>

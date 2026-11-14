@@ -25,7 +25,9 @@
 3. Supabase Auth의 Kakao 제공자와 사이트 URL을 설정합니다. 이전 익명 참가 기록 연결을 위해 수동 계정 연결을 켜고, Anonymous sign-ins는 끕니다. 변경된 SQL 파일도 다시 실행해 카카오 계정만 참가·매매할 수 있게 합니다.
 4. Cloudflare Worker에 KIS 및 Supabase 서버 비밀키를 등록합니다. 종목 검색은 KIS 목록을 사용하고 선택한 종목 가격만 조회합니다. 주문은 가상 계좌에만 반영하며 증권 주문 API를 호출하지 않습니다.
 
-USD/KRW 환율 피드는 별도 설정입니다. 자세한 Kakao/Supabase 설정과 기존 참가자 데이터 이전은 `캠퍼스리그_설정안내.md`를 참고하세요. 비밀 키나 service_role 키는 HTML, GitHub, 브라우저 코드 또는 채팅에 올리지 마세요.
+USD/KRW 환율은 KIS Worker에서 자동 수집됩니다. 자세한 Kakao/Supabase 설정과 기존 참가자 데이터 이전은 `캠퍼스리그_설정안내.md`를 참고하세요. 비밀 키나 service_role 키는 HTML, GitHub, 브라우저 코드 또는 채팅에 올리지 마세요.
 
 자세한 안내는 캠퍼스리그_설정안내.md와 cloudflare-krx-worker/README.md를 참고하세요. 비밀 키나 service_role 키는 HTML, GitHub, 브라우저 코드에 넣지 마세요.
 
+
+운영 구조와 장애 처리, 검증 결과는 [운영 기록](docs/OPERATIONS.md)을 참고하세요.

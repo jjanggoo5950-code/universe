@@ -37,6 +37,10 @@ function isRegularMarketOpen(market, now = new Date()) {
     : minutes >= 9 * 60 + 30 && minutes < 16 * 60;
 }
 
+async function timedFetch(url, options = {}) {
+  return fetch(url, { ...options, signal: AbortSignal.timeout(8000) });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -49,11 +53,20 @@ export default {
       "vary": "Origin",
     };
 
-    if (url.pathname === "/quote" && request.method === "OPTIONS") {
+    if (["/quote", "/overview"].includes(url.pathname) && request.method === "OPTIONS") {
       if (origin !== SITE_ORIGIN) return new Response(null, { status: 403 });
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
+    if (url.pathname === "/overview" && request.method === "GET") {
+      const id = env.KIS_COLLECTOR.idFromName("krx-main");
+      try {
+        const response = await env.KIS_COLLECTOR.get(id).fetch("https://collector.internal/overview");
+        return new Response(response.body, { status: response.status, headers: { ...corsHeaders, "content-type": "application/json", "retry-after": "20" } });
+      } catch {
+        return Response.json({ error: "temporarily_unavailable" }, { status: 503, headers: { ...corsHeaders, "retry-after": "20" } });
+      }
+    }
     if (url.pathname === "/quote" && request.method === "GET") {
       if (origin !== SITE_ORIGIN) {
         return Response.json({ error: "origin_not_allowed" }, { status: 403 });
@@ -76,7 +89,7 @@ export default {
       });
       return new Response(response.body, {
         status: response.status,
-        headers: { ...corsHeaders, "content-type": "application/json; charset=utf-8" },
+        headers: { ...corsHeaders, "content-type": "application/json; charset=utf-8", "retry-after": response.headers.get("retry-after") || "15" },
       });
     }
 
@@ -122,10 +135,24 @@ export class KisCollector {
     this.fxRefreshing = null;
     this.lastPublishedAt = new Map();
     this.quoteCache = new Map();
+    this.pendingQuotes = new Map();
+    this.requestWindows = new Map();
+    this.restTail = Promise.resolve();
+    this.restQueued = 0;
+    this.nextRestAt = 0;
+    this.circuitUntil = 0;
+    this.restFailures = 0;
+    this.publishTail = Promise.resolve();
+    this.publishQueued = 0;
+    this.publishedQuotes = new Map();
   }
 
   async fetch(request) {
     const path = new URL(request.url).pathname;
+    if (path === "/overview" && request.method === "GET") {
+      try { return Response.json(await this.getOverview()); }
+      catch { return Response.json({ error: "overview_unavailable" }, { status: 503 }); }
+    }
     if (path === "/status" && request.method === "GET") {
       const savedSnapshotStatus = await this.ctx.storage.get("dailySnapshotStatus");
       const savedFxStatus = await this.ctx.storage.get("fxQuoteStatus");
@@ -135,7 +162,9 @@ export class KisCollector {
         realtime_kr_symbols: KRX_SYMBOLS,
         daily_snapshot_symbols: SNAPSHOT_ASSETS.map((asset) => asset.symbol),
         fx_symbol: FX_SYMBOL,
-        fx_source_version: "fx-daily-fallback-v6",
+        fx_source_version: "resilience-v1",
+        queued_requests: this.restQueued,
+        upstream_circuit_open: Date.now() < this.circuitUntil,
         last_fx_at: this.lastFxAt || savedFxStatus?.at || null,
         last_fx_error: this.lastFxError ?? savedFxStatus?.error ?? null,
         last_tick_at: this.lastTickAt,
@@ -162,6 +191,8 @@ export class KisCollector {
       } catch (error) {
         this.lastFxError = this.safeError(error);
       }
+
+      try { await this.refreshHeldQuotes(); } catch (error) { this.lastError = this.safeError(error); }
 
       try {
         await this.ensureConnected();
@@ -194,10 +225,9 @@ export class KisCollector {
           return Response.json({ error: "quote_rate_limited" }, { status: 429, headers: { "retry-after": "60" } });
         }
         const quote = await this.fetchOnDemandQuote({ market, symbol, exchange, name });
-        if (!await this.publishQuote(quote)) throw new Error("quote_storage_failed");
         return Response.json(quote, { headers: { "cache-control": "no-store" } });
       } catch (error) {
-        return Response.json({ error: "quote_unavailable", message: this.safeError(error) }, { status: 502 });
+        return Response.json({ error: "quote_unavailable" }, { status: 503, headers: { "retry-after": "15" } });
       }
     }
 
@@ -249,7 +279,7 @@ export class KisCollector {
     this.status = "connecting";
     this.lastError = null;
 
-    const approvalResponse = await fetch(`${KIS_REST_URL}/oauth2/Approval`, {
+    const approvalResponse = await this.fetchUpstream(`${KIS_REST_URL}/oauth2/Approval`, {
       method: "POST",
       headers: { "content-type": "application/json; charset=utf-8" },
       body: JSON.stringify({
@@ -300,6 +330,7 @@ export class KisCollector {
       await new Promise((resolve) => setTimeout(resolve, 150));
     }
 
+    this.reconnectAttempts = 0;
     this.status = "connected";
     this.lastError = null;
   }
@@ -326,7 +357,7 @@ export class KisCollector {
     this.lastTickAt = quote.as_of;
 
     const now = Date.now();
-    if (now - (this.lastPublishedAt.get(quote.symbol) || 0) < 950) return;
+    if (now - (this.lastPublishedAt.get(quote.symbol) || 0) < 5000) return;
     this.lastPublishedAt.set(quote.symbol, now);
     await this.publishQuote(quote);
   }
@@ -408,18 +439,36 @@ export class KisCollector {
     });
   }
 
-  async refreshFxQuoteIfDue() {
-    if (this.fxRefreshing) return this.fxRefreshing;
-    const now = Date.now();
-    const lastAttempt = Number(await this.ctx.storage.get("fxQuoteAttemptAt") || 0);
-    if (now - lastAttempt < FX_REFRESH_INTERVAL_MS) return;
+  refreshFxQuoteIfDue() {
+    if (!this.fxRefreshing) this.fxRefreshing = (async () => {
+      const now = Date.now();
+      const last = Number(await this.ctx.storage.get("fxQuoteAttemptAt") || 0);
+      if (now-last >= FX_REFRESH_INTERVAL_MS) await this.refreshFxQuote(now);
+    })().finally(() => { this.fxRefreshing = null; });
+    return this.fxRefreshing;
+  }
 
-    this.fxRefreshing = this.refreshFxQuote(now);
-    try {
-      await this.fxRefreshing;
-    } finally {
-      this.fxRefreshing = null;
-    }
+  refreshHeldQuotes() {
+    if (!this.heldRefreshing) this.heldRefreshing = (async () => {
+      const now = Date.now();
+      if (now - Number(await this.ctx.storage.get("heldAttemptAt") || 0) < 55000) return;
+      await this.ctx.storage.put("heldAttemptAt", now);
+      const after = await this.ctx.storage.get("heldCursor") || "";
+      const response = await timedFetch(`${SUPABASE_PROJECT_URL}/rest/v1/rpc/get_campus_quote_targets`, {
+        method:"POST", headers:{apikey:this.env.SUPABASE_SECRET_KEY,"content-type":"application/json"}, body:JSON.stringify({p_after:after}),
+      });
+      if (!response.ok) throw new Error("held_quote_targets_unavailable");
+      const targets = await response.json();
+      if (!Array.isArray(targets)) throw new Error("held_quote_targets_invalid");
+      for (const asset of targets) {
+        // The quote source records the original exchange chosen from the KIS catalog.
+        asset.exchange = /KIS_(NAS|NYS|AMS)_/.exec(asset.source)?.[1] || "NAS";
+        try { await this.fetchOnDemandQuote(asset); } catch { /* continue to the next holding */ }
+        await this.ctx.storage.put("heldCursor", asset.symbol);
+      }
+      if (targets.length < 20) await this.ctx.storage.put("heldCursor", "");
+    })().finally(() => { this.heldRefreshing = null; });
+    return this.heldRefreshing;
   }
 
   async refreshFxQuote(now) {
@@ -429,7 +478,7 @@ export class KisCollector {
       const requestFx = async (path, trId, params) => {
         const url = new URL(KIS_REST_URL + path);
         url.search = new URLSearchParams(params).toString();
-        const response = await fetch(url, {
+        const response = await this.fetchUpstream(url, {
           headers: {
             "content-type": "application/json; charset=utf-8",
             authorization: `Bearer ${accessToken}`,
@@ -486,7 +535,7 @@ export class KisCollector {
       let body = null, parsed = null, freshness = "real_time", marketCode = null;
       const attempts = [];
 
-      for (const fxMarketCode of ["KX", "X"]) {
+      for (const fxMarketCode of ["X"]) {
         try {
           body = await requestFx(
             "/uapi/overseas-price/v1/quotations/inquire-time-indexchartprice",
@@ -556,7 +605,7 @@ export class KisCollector {
       const time = String(latest.stck_cntg_hour || output.stck_cntg_hour || "").replace(/\D/g, "").padStart(6, "0");
       let asOf = new Date(now).toISOString();
       if (/^\d{8}$/.test(date)) {
-        const timePart = freshness === "end_of_day" ? "23:59:59" : /^\d{6}$/.test(time)
+        const timePart = freshness === "end_of_day" ? "00:00:00" : /^\d{6}$/.test(time)
           ? `${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}`
           : "23:59:59";
         const localStamp = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}T${timePart}+09:00`;
@@ -594,11 +643,16 @@ export class KisCollector {
     }
   }
 
-  async getRestAccessToken() {
+  getRestAccessToken() {
+    if (!this.tokenRequest) this.tokenRequest = this.loadRestAccessToken().finally(() => { this.tokenRequest = null; });
+    return this.tokenRequest;
+  }
+
+  async loadRestAccessToken() {
     const cached = await this.ctx.storage.get("kisRestAccessToken");
     if (cached?.value && Number(cached.expiresAt) > Date.now() + 60_000) return cached.value;
 
-    const response = await fetch(`${KIS_REST_URL}/oauth2/tokenP`, {
+    const response = await this.fetchUpstream(`${KIS_REST_URL}/oauth2/tokenP`, {
       method: "POST",
       headers: { "content-type": "application/json; charset=utf-8" },
       body: JSON.stringify({
@@ -651,7 +705,7 @@ export class KisCollector {
       headers.tr_id = "HHDFS76240000";
     }
 
-    const response = await fetch(url, { headers });
+    const response = await this.fetchUpstream(url, { headers });
     if (!response.ok) throw new Error(`kis_${asset.market.toLowerCase()}_daily_http_${response.status}`);
     const body = await response.json();
     if (String(body.rt_cd) !== "0") throw new Error(`kis_${asset.market.toLowerCase()}_daily_${body.msg_cd || body.rt_cd || "error"}`);
@@ -670,7 +724,7 @@ export class KisCollector {
     const changePct = previous?.price
       ? ((latest.price - previous.price) / previous.price) * 100
       : Number(asset.market === "KR" ? latest.row.prdy_ctrt : latest.row.rate) || 0;
-    const dateIso = `${latest.date.slice(0, 4)}-${latest.date.slice(4, 6)}-${latest.date.slice(6, 8)}T12:00:00.000Z`;
+    const dateIso = `${latest.date.slice(0, 4)}-${latest.date.slice(4, 6)}-${latest.date.slice(6, 8)}${asset.market === "KR" ? "T06:30:00.000Z" : "T00:00:00.000Z"}`;
 
     return {
       symbol: asset.symbol,
@@ -689,20 +743,92 @@ export class KisCollector {
 
   async allowQuoteRequest(ip) {
     const now = Date.now();
-    const key = "quote-rate:" + String(ip).slice(0, 64);
-    const saved = await this.ctx.storage.get(key);
-    const window = saved && now - Number(saved.startedAt) < 60_000
-      ? saved
-      : { startedAt: now, count: 0 };
-    if (window.count >= 30) return false;
-    await this.ctx.storage.put(key, { startedAt: window.startedAt, count: window.count + 1 }, { expirationTtl: 120 });
+    // A school can share an IP. This is only a generous abuse limit, not an account limit.
+    for (const [key, value] of this.requestWindows) if (now - value.at >= 60000) this.requestWindows.delete(key);
+    const value = this.requestWindows.get(ip) || { at: now, count: 0 };
+    if (value.count >= 600 || this.requestWindows.size > 10000) return false;
+    value.count++;
+    this.requestWindows.set(ip, value);
     return true;
   }
 
-  async fetchOnDemandQuote({ market, symbol, exchange, name }) {
-    const cacheKey = market + ":" + symbol;
-    const cached = this.quoteCache.get(cacheKey);
-    if (cached && Date.now() - cached.fetchedAt < 5_000) return cached.quote;
+  async getOverview() {
+    const age = Date.now() - (this.overviewAt || 0);
+    if (this.overview && age < 20000) return this.overview;
+    if (this.overviewRequest) return this.overviewRequest;
+    this.overviewRequest = (async () => {
+      try {
+        const response = await timedFetch(`${SUPABASE_PROJECT_URL}/rest/v1/rpc/get_campus_league_overview`, {
+          method: "POST", headers: { apikey: this.env.SUPABASE_SECRET_KEY, "content-type": "application/json" }, body: "{}",
+        });
+        if (!response.ok) throw new Error("overview_unavailable");
+        const data = await response.json();
+        if (!Array.isArray(data.quotes) || !Array.isArray(data.schools)) throw new Error("invalid_overview");
+        this.overviewAt = Date.now();
+        this.overview = { ...data, fetched_at: new Date(this.overviewAt).toISOString(), stale: false };
+        return this.overview;
+      } catch (error) {
+        if (this.overview && age < 120000) return { ...this.overview, stale: true };
+        throw error;
+      } finally { this.overviewRequest = null; }
+    })();
+    return this.overviewRequest;
+  }
+
+  async fetchUpstream(url, options = {}) {
+    if (!String(url).startsWith(KIS_REST_URL)) return timedFetch(url, options);
+    if (Date.now() < this.circuitUntil || this.restQueued >= 16) throw new Error("upstream_busy");
+    this.restQueued++;
+    const deadline = Date.now() + 20000;
+    const task = this.restTail.then(async () => {
+      if (Date.now() < this.circuitUntil) throw new Error("upstream_cooling_down");
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (Date.now() > deadline) throw new Error("upstream_queue_timeout");
+        await new Promise(resolve => setTimeout(resolve, Math.max(0, this.nextRestAt - Date.now())));
+        this.nextRestAt = Date.now() + 1200;
+        try {
+          const response = await timedFetch(url, options);
+          const body = await response.clone().json().catch(() => ({}));
+          const transient = response.status === 429 || response.status >= 500 || body.msg_cd === "EGW00201";
+          if (transient) throw new Error("upstream_temporarily_unavailable");
+          this.restFailures = 0;
+          return response;
+        } catch (error) {
+          this.restFailures++;
+          if (this.restFailures >= 3) this.circuitUntil = Date.now() + 30000;
+          if (attempt || Date.now() < this.circuitUntil) throw error;
+          this.nextRestAt = Date.now() + 1500 + Math.random() * 500;
+        }
+      }
+    });
+    this.restTail = task.catch(() => {});
+    try { return await task; } finally { this.restQueued--; }
+  }
+
+  async fetchOnDemandQuote(asset) {
+    const key = asset.market + ":" + asset.exchange + ":" + asset.symbol;
+    const cached = this.quoteCache.get(key);
+    const ttl = isRegularMarketOpen(asset.market) ? 15000 : 15 * 60000;
+    if (cached && Date.now() - cached.fetchedAt < ttl) return cached.quote;
+    if (this.pendingQuotes.has(key)) return this.pendingQuotes.get(key);
+    const task = (async () => {
+      try {
+        const quote = await this.loadOnDemandQuote(asset);
+        if (!await this.publishQuote(quote)) throw new Error("quote_storage_failed");
+        this.quoteCache.set(key, { fetchedAt: Date.now(), quote });
+        if (this.quoteCache.size > 1000) this.quoteCache.delete(this.quoteCache.keys().next().value);
+        return quote;
+      } catch (error) {
+        // Never refresh the timestamp or enable orders using a failed lookup.
+        if (cached) return { ...cached.quote, is_tradable: false, stale: true };
+        throw error;
+      } finally { this.pendingQuotes.delete(key); }
+    })();
+    this.pendingQuotes.set(key, task);
+    return task;
+  }
+
+  async loadOnDemandQuote({ market, symbol, exchange, name }) {
 
     const asset = {
       symbol,
@@ -738,7 +864,7 @@ export class KisCollector {
         headers.tr_id = "HHDFS00000300";
       }
 
-      const response = await fetch(url, { headers });
+      const response = await this.fetchUpstream(url, { headers });
       if (!response.ok) throw new Error(`kis_${market.toLowerCase()}_quote_http_${response.status}`);
       const body = await response.json();
       if (String(body.rt_cd) !== "0") {
@@ -756,7 +882,7 @@ export class KisCollector {
         price,
         currency: asset.currency,
         change_pct: Number.isFinite(change) ? Number(change.toFixed(4)) : 0,
-        source: market === "KR" ? "KIS_KR_REST" : "KIS_US_REST",
+        source: market === "KR" ? "KIS_KR_REST" : `KIS_${exchange}_REST`,
         freshness: "real_time",
         is_tradable: true,
         as_of: now,
@@ -764,12 +890,24 @@ export class KisCollector {
       };
     }
 
-    this.quoteCache.set(cacheKey, { fetchedAt: Date.now(), quote });
     return quote;
   }
 
-  async publishQuote(quote) {
-    const response = await fetch(`${SUPABASE_PROJECT_URL}/rest/v1/market_quotes?on_conflict=symbol`, {
+  publishQuote(quote) {
+    if (this.publishQueued >= 32) return Promise.resolve(false);
+    this.publishQueued++;
+    const task = this.publishTail.then(() => this.writeQuote(quote)).finally(() => { this.publishQueued--; });
+    this.publishTail = task.catch(() => {});
+    return task;
+  }
+
+  async writeQuote(quote) {
+    const stamp = Date.parse(quote.as_of);
+    if (!Number.isFinite(quote.price) || quote.price <= 0 || !Number.isFinite(stamp) || stamp > Date.now() + 60000) return false;
+    const previous = this.publishedQuotes.get(quote.symbol);
+    if (previous && stamp < previous) return true;
+    if (quote.freshness === "end_of_day" && quote.market !== "FX" && isRegularMarketOpen(quote.market)) return true;
+    const response = await this.fetchUpstream(`${SUPABASE_PROJECT_URL}/rest/v1/market_quotes?on_conflict=symbol`, {
       method: "POST",
       headers: {
         apikey: this.env.SUPABASE_SECRET_KEY,
@@ -783,11 +921,15 @@ export class KisCollector {
       return false;
     }
     this.lastError = null;
+    this.publishedQuotes.set(quote.symbol, stamp);
+    if (this.publishedQuotes.size > 2000) this.publishedQuotes.delete(this.publishedQuotes.keys().next().value);
     return true;
   }
 
   async scheduleReconnect() {
-    try { await this.ctx.storage.setAlarm(Date.now() + 5_000); } catch { /* another retry is already scheduled */ }
+    const delay = Math.min(60000, 5000 * 2 ** Math.min(this.reconnectAttempts || 0, 4)) + Math.random() * 1000;
+    this.reconnectAttempts = (this.reconnectAttempts || 0) + 1;
+    try { await this.ctx.storage.setAlarm(Date.now() + delay); } catch { /* another retry is already scheduled */ }
   }
 
   safeError(error) {
