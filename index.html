@@ -1119,6 +1119,7 @@
       if (!overview.error && window.CampusLeague) {
         window.CampusLeague.applyRemoteOverview(overview.data);
         const session = await client.auth.getSession();
+        if (window.CampusLeague) window.CampusLeague.setAuthUser(session.data && session.data.session ? session.data.session.user : null);
         if (session.data && session.data.session) {
           const portfolio = await client.rpc("get_my_campus_portfolio");
           if (!portfolio.error && portfolio.data && portfolio.data.profile) window.CampusLeague.applyRemotePortfolio(portfolio.data);
