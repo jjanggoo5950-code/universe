@@ -135,7 +135,7 @@ export class KisCollector {
         realtime_kr_symbols: KRX_SYMBOLS,
         daily_snapshot_symbols: SNAPSHOT_ASSETS.map((asset) => asset.symbol),
         fx_symbol: FX_SYMBOL,
-        fx_source_version: "fx-daily-fallback-v4",
+        fx_source_version: "fx-daily-fallback-v5",
         last_fx_at: this.lastFxAt || savedFxStatus?.at || null,
         last_fx_error: this.lastFxError ?? savedFxStatus?.error ?? null,
         last_tick_at: this.lastTickAt,
@@ -477,46 +477,68 @@ export class KisCollector {
         return { output, latest, price };
       };
 
-      const currentParams = {
-        FID_COND_MRKT_DIV_CODE: "X",
-        FID_INPUT_ISCD: KIS_FX_CODE,
-        FID_HOUR_CLS_CODE: "0",
-        FID_PW_DATA_INCU_YN: "Y",
-      };
-      let body = null, parsed = null, currentError = null, freshness = "real_time";
-      try {
-        body = await requestFx(
-          "/uapi/overseas-price/v1/quotations/inquire-time-indexchartprice",
-          "FHKST03030200",
-          currentParams
-        );
-        parsed = parseFxBody(body);
-      } catch (error) {
-        currentError = this.safeError(error);
+      const kstNow = new Date(now + 9 * 60 * 60 * 1000);
+      const endDay = new Date(Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), kstNow.getUTCDate()));
+      if (endDay.getUTCDay() === 0) endDay.setUTCDate(endDay.getUTCDate() - 2);
+      else if (endDay.getUTCDay() === 6) endDay.setUTCDate(endDay.getUTCDate() - 1);
+      const endDate = endDay.toISOString().slice(0, 10).replaceAll("-", "");
+      const startDate = new Date(endDay.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replaceAll("-", "");
+      let body = null, parsed = null, freshness = "real_time", marketCode = null;
+      const attempts = [];
+
+      for (const fxMarketCode of ["KX", "X"]) {
+        try {
+          body = await requestFx(
+            "/uapi/overseas-price/v1/quotations/inquire-time-indexchartprice",
+            "FHKST03030200",
+            {
+              FID_COND_MRKT_DIV_CODE: fxMarketCode,
+              FID_INPUT_ISCD: KIS_FX_CODE,
+              FID_HOUR_CLS_CODE: "0",
+              FID_PW_DATA_INCU_YN: "Y",
+            }
+          );
+          parsed = parseFxBody(body);
+        } catch (error) {
+          parsed = null;
+          attempts.push(fxMarketCode + "_intraday_" + this.safeError(error));
+        }
+        if (parsed?.price) {
+          marketCode = fxMarketCode;
+          break;
+        }
+        if (!attempts.some((attempt) => attempt.startsWith(fxMarketCode + "_intraday_"))) {
+          attempts.push(fxMarketCode + "_intraday_empty");
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1_200));
+        try {
+          body = await requestFx(
+            "/uapi/overseas-price/v1/quotations/inquire-daily-chartprice",
+            "FHKST03030100",
+            {
+              FID_COND_MRKT_DIV_CODE: fxMarketCode,
+              FID_INPUT_ISCD: KIS_FX_CODE,
+              FID_INPUT_DATE_1: startDate,
+              FID_INPUT_DATE_2: endDate,
+              FID_PERIOD_DIV_CODE: "D",
+            }
+          );
+          parsed = parseFxBody(body);
+        } catch (error) {
+          parsed = null;
+          attempts.push(fxMarketCode + "_daily_" + this.safeError(error));
+        }
+        if (parsed?.price) {
+          freshness = "end_of_day";
+          marketCode = fxMarketCode;
+          break;
+        }
+        if (!attempts.some((attempt) => attempt.startsWith(fxMarketCode + "_daily_"))) {
+          attempts.push(fxMarketCode + "_daily_empty");
+        }
       }
 
-      if (!parsed?.price) {
-        await new Promise((resolve) => setTimeout(resolve, 1_200));
-        const kstNow = new Date(now + 9 * 60 * 60 * 1000);
-        const endDay = new Date(Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), kstNow.getUTCDate()));
-        if (endDay.getUTCDay() === 0) endDay.setUTCDate(endDay.getUTCDate() - 2);
-        else if (endDay.getUTCDay() === 6) endDay.setUTCDate(endDay.getUTCDate() - 1);
-        const endDate = endDay.toISOString().slice(0, 10).replaceAll("-", "");
-        const startDate = new Date(endDay.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replaceAll("-", "");
-        body = await requestFx(
-          "/uapi/overseas-price/v1/quotations/inquire-daily-chartprice",
-          "FHKST03030100",
-          {
-            FID_COND_MRKT_DIV_CODE: "X",
-            FID_INPUT_ISCD: KIS_FX_CODE,
-            FID_INPUT_DATE_1: startDate,
-            FID_INPUT_DATE_2: endDate,
-            FID_PERIOD_DIV_CODE: "D",
-          }
-        );
-        parsed = parseFxBody(body);
-        freshness = "end_of_day";
-      }
       if (!parsed?.price) {
         const diagnostic = {
           out_price: parsed?.output?.ovrs_nmix_prpr ?? null,
@@ -524,8 +546,9 @@ export class KisCollector {
           out_close: parsed?.output?.ovrs_nmix_prdy_clpr ?? null,
           row_close: parsed?.latest?.ovrs_nmix_prdy_clpr ?? null,
           msg_cd: body?.msg_cd ?? null,
+          attempts,
         };
-        throw new Error("kis_fx_daily_price_missing_" + JSON.stringify(diagnostic) + (currentError ? "_" + currentError : ""));
+        throw new Error("kis_fx_price_missing_" + JSON.stringify(diagnostic));
       }
 
       const { output, latest, price } = parsed;
