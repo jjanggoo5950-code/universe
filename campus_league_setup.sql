@@ -63,6 +63,18 @@ create table if not exists public.campus_fx_conversions (
 create index if not exists campus_fx_player_time
   on public.campus_fx_conversions (user_id, created_at desc);
 
+-- Let the static site receive quote changes from the KRX feed immediately.
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname='supabase_realtime')
+     and not exists (
+       select 1 from pg_publication_tables
+       where pubname='supabase_realtime' and schemaname='public' and tablename='market_quotes'
+     ) then
+    alter publication supabase_realtime add table public.market_quotes;
+  end if;
+end $$;
+
 alter table public.campus_schools enable row level security;
 alter table public.campus_players enable row level security;
 alter table public.campus_wallets enable row level security;
@@ -144,13 +156,18 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_fx numeric(20,6);
+  v_fx_as_of timestamptz;
+  v_fx_freshness text;
   v_wallet public.campus_wallets%rowtype;
   v_usd numeric(18,4);
 begin
   if v_uid is null then raise exception '로그인이 필요합니다.'; end if;
   if p_krw_amount is null or p_krw_amount < 1000 then raise exception '최소 환전 금액은 1,000원입니다.'; end if;
-  select price into v_fx from public.market_quotes where symbol='USD/KRW' and market='FX' and is_tradable;
+  select price,as_of,freshness into v_fx,v_fx_as_of,v_fx_freshness
+    from public.market_quotes where symbol='USD/KRW' and market='FX' and is_tradable;
   if v_fx is null then raise exception '환율 시세가 아직 연결되지 않았습니다.'; end if;
+  if v_fx_freshness='real_time' and v_fx_as_of < now() - interval '2 minutes' then raise exception '환율 시세가 오래되어 환전할 수 없습니다.'; end if;
+  if v_fx_as_of < now() - interval '7 days' then raise exception '환율 시세가 오래되어 환전할 수 없습니다.'; end if;
   select * into v_wallet from public.campus_wallets where user_id=v_uid for update;
   if not found then raise exception '먼저 리그에 참가해주세요.'; end if;
   if v_wallet.cash_krw < p_krw_amount then raise exception '원화 잔액이 부족합니다.'; end if;
@@ -172,6 +189,8 @@ declare
   v_quote public.market_quotes%rowtype;
   v_wallet public.campus_wallets%rowtype;
   v_fx numeric(20,6);
+  v_fx_as_of timestamptz;
+  v_fx_freshness text;
   v_native_total numeric(24,6);
   v_owned bigint;
 begin
@@ -182,9 +201,14 @@ begin
   if not found or not v_quote.is_tradable or v_quote.freshness='demo' then
     raise exception '실제 시세가 연결되기 전에는 주문할 수 없습니다.';
   end if;
+  if v_quote.freshness='real_time' and v_quote.as_of < now() - interval '2 minutes' then raise exception '실시간 시세가 오래되어 주문할 수 없습니다.'; end if;
   if v_quote.as_of < now() - interval '7 days' then raise exception '시세가 오래되어 주문할 수 없습니다.'; end if;
-  select price into v_fx from public.market_quotes where symbol='USD/KRW' and market='FX' and is_tradable;
-  if v_fx is null then raise exception 'USD/KRW 환율 시세가 연결되지 않았습니다.'; end if;
+  select price,as_of,freshness into v_fx,v_fx_as_of,v_fx_freshness
+    from public.market_quotes where symbol='USD/KRW' and market='FX' and is_tradable;
+  if v_quote.currency='USD' and v_fx is null then raise exception 'USD/KRW 환율 시세가 연결되지 않았습니다.'; end if;
+  if v_quote.currency='USD' and v_fx_freshness='real_time' and v_fx_as_of < now() - interval '2 minutes' then raise exception 'USD/KRW 실시간 환율이 오래되어 주문할 수 없습니다.'; end if;
+  if v_quote.currency='USD' and v_fx_as_of < now() - interval '7 days' then raise exception 'USD/KRW 환율 시세가 오래되어 주문할 수 없습니다.'; end if;
+  v_fx := coalesce(v_fx,1380);
 
   select * into v_wallet from public.campus_wallets where user_id=v_uid for update;
   if not found then raise exception '먼저 리그에 참가해주세요.'; end if;
