@@ -270,8 +270,7 @@
       <h1 class="auth-gate-title" id="auth-gate-title">카카오 로그인으로 시작하세요.</h1>
       <p class="auth-gate-copy">로그인 후 게임 별명과 학교를 정해 참가합니다. 순위와 기록에는 직접 입력한 별명과 학교만 표시되고, 카카오 프로필 이름은 사용하지 않습니다.</p>
       <button class="kakao-auth-button" id="auth-gate-kakao" type="button" disabled>카카오로 로그인</button>
-      <p class="auth-gate-status" id="auth-gate-status" role="status">온라인 계정을 확인하고 있어요.</p>
-      <p class="account-status">예전 임시 계정으로 참가한 기록이 이 브라우저에 남아 있다면, 카카오 로그인으로 기존 기록을 연결할 수 있습니다.</p>
+      <p class="auth-gate-status" id="auth-gate-status" role="status">로그인 상태를 확인하고 있어요.</p>
     </section>
   </div>
   <div class="shell" id="app-shell" inert>
@@ -288,7 +287,7 @@
       </nav>
       <div class="top-actions">
         <span class="season-chip">SEASON 01 · OPEN</span>
-        <span class="data-chip"><i class="data-dot"></i><span id="data-mode">DEMO MODE</span></span>
+        <span class="data-chip"><span id="data-mode">가상 투자</span></span>
       </div>
     </header>
 
@@ -298,12 +297,12 @@
         <h1>우리 학교의 투자 실력을<br>수익률로 증명하세요.</h1>
         <p class="hero-copy">모든 참가자는 가상자금 <strong>₩10,000,000</strong>으로 출발합니다. 한국·미국 주식을 사고팔고, 달러로 환전해 개인 포트폴리오와 학교 순위를 만들어보세요.</p>
       </div>
-      <div class="hero-aside"><strong>₩10,000,000</strong>INITIAL CAPITAL<br>REAL MONEY · NEVER</div>
+      <div class="hero-aside"><strong>₩10,000,000</strong>가상 투자금 · 실제 거래 없음</div>
     </section>
 
     <div class="notice" id="data-notice" role="status">
       <span class="notice-icon">◎</span>
-      <span id="data-notice-copy"><strong>미리보기 모드</strong> — 아래 가격은 게임 흐름을 보여주기 위한 예시 시세이며 실제 주가가 아닙니다. 실전 리그는 시세 제공자 연결과 온라인 데이터베이스 설정이 끝난 뒤 시작할 수 있습니다.</span>
+      <span id="data-notice-copy"><strong>가상 투자 게임</strong> — 가격은 실제 시세와 다를 수 있으며 거래는 게임 계좌에만 반영됩니다.</span>
     </div>
 
     <section id="dashboard-view" class="view active">
@@ -334,8 +333,7 @@
               <span class="tiny-label">SCHOOL LEADERBOARD</span>
             </div>
             <div id="school-leaderboard" class="leader-list"></div>
-            <p class="privacy-note" id="leaderboard-privacy-note">지금은 이 브라우저에 저장되는 데모입니다. 실제 학교 간 순위는 Supabase 연결이 완료되면 공유됩니다.</p>
-          </section>
+                      </section>
           <section class="card">
             <div class="card-heading">
               <div><h2 class="card-title">개인 수익률 명예의 전당</h2><p class="card-description">시즌 최고 수익률과 가장 낮은 수익률을 기록한 참가자.</p></div>
@@ -362,7 +360,7 @@
             <p class="account-status">공개되는 정보는 게임 별명과 학교입니다. 카카오 실명이나 프로필 이름은 순위에 사용하지 않습니다.</p>
           </section>
           <section class="card hidden" id="profile-card">
-            <div class="card-heading"><div><h2 class="card-title">내 참가 정보</h2><p class="card-description" id="profile-storage-copy">현재 기기에 저장된 데모 계정입니다.</p></div><span class="tiny-label" id="profile-storage-label">LOCAL</span></div>
+            <div class="card-heading"><div><h2 class="card-title">내 참가 정보</h2><p class="card-description">내 별명과 학교</p></div></div>
             <div class="profile-card"><div class="profile-left"><span class="profile-avatar">✦</span><div style="min-width:0"><div class="profile-name" id="profile-name"></div><div class="profile-school" id="profile-school"></div></div></div><div class="profile-actions"><button class="secondary" id="edit-profile" type="button">수정</button><button class="secondary" id="auth-signout" type="button">로그아웃</button></div></div>
             <p class="account-status" id="account-link-status"></p>
           </section>
@@ -373,7 +371,7 @@
               <div class="swap">⇄</div>
               <div><div class="currency-label">보유 달러</div><div class="currency-amount" id="cash-usd">$0.00</div><div class="currency-unit">USD WALLET</div></div>
             </div>
-            <p class="fx-rate"><span id="fx-label">게임 환율</span> <strong id="fx-display">1 USD = ₩1,380</strong> <span id="fx-freshness" class="muted">· 예시 값</span></p>
+            <p class="fx-rate"><span id="fx-label">게임 환율</span> <strong id="fx-display">1 USD = ₩1,380</strong> <span id="fx-freshness" class="muted">· 예시 환율</span></p>
             <form class="exchange-form" id="exchange-form">
               <input id="exchange-amount" type="number" min="1000" step="1000" placeholder="환전할 원화" aria-label="환전할 원화" required>
               <button class="secondary" id="exchange-submit" type="submit">USD로 환전</button>
@@ -389,16 +387,16 @@
     </section>
 
     <section id="market-view" class="view">
-      <div class="view-head"><div><h2>Market desk</h2><p>한국·미국 상장 주식을 검색하고 KIS 시세로 가상 매매해보세요.</p></div><span class="data-chip"><i class="data-dot"></i> KIS QUOTE LOOKUP</span></div>
+      <div class="view-head"><div><h2>Market desk</h2><p>한국·미국 상장 주식을 검색하고 가상으로 매매해보세요.</p></div><span class="data-chip">종목 시세</span></div>
       <section class="card" style="margin-bottom:15px">
-        <div class="card-heading"><div><h2 class="card-title">전체 종목 검색</h2><p class="card-description">KIS 종목 목록에서 검색한 뒤 가격을 불러옵니다. 매수·매도는 게임 속 가상 계좌에만 반영됩니다.</p></div><span class="tiny-label" id="stock-catalog-count">목록 로딩 전</span></div>
+        <div class="card-heading"><div><h2 class="card-title">전체 종목 검색</h2><p class="card-description">전체 종목 목록에서 검색한 뒤 가격을 불러옵니다. 매수·매도는 게임 속 가상 계좌에만 반영됩니다.</p></div><span class="tiny-label" id="stock-catalog-count">목록 로딩 전</span></div>
         <div class="stock-search"><input id="stock-search" type="search" maxlength="60" placeholder="종목명 또는 티커 검색 · 예: 삼성전자, AAPL, Microsoft" autocomplete="off" aria-label="종목명 또는 티커 검색"><select id="stock-search-market" aria-label="검색 시장"><option value="ALL">한국 + 미국</option><option value="KR">한국주식</option><option value="US">미국주식</option></select></div>
         <p class="stock-search-status" id="stock-search-status" role="status">종목명이나 티커를 입력하세요. 장이 닫혀 있으면 최근 종가를 불러오며 주문은 잠깁니다.</p>
         <div class="stock-results" id="stock-search-results" aria-live="polite"></div>
       </section>
       <div class="layout">
         <section class="card">
-          <div class="card-heading"><div><h2 class="card-title">종목 목록</h2><p class="card-description">검색한 종목의 KIS 조회 시세입니다. 매수·매도는 게임 속 가상 계좌에서만 처리됩니다.</p></div><div class="market-tabs"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div></div>
+          <div class="card-heading"><div><h2 class="card-title">종목 목록</h2><p class="card-description">검색한 종목의 시세입니다. 매수·매도는 게임 속 가상 계좌에서만 처리됩니다.</p></div><div class="market-tabs"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div></div>
           <div style="overflow-x:auto"><table class="market-table"><thead><tr><th>종목</th><th class="price-heading">시세</th><th>변동률</th><th>시장</th><th></th></tr></thead><tbody id="market-rows-secondary"></tbody></table></div>
         </section>
         <aside class="card trade-panel">
@@ -422,10 +420,10 @@
           <div class="portfolio-meta"><span>수익률 <strong id="portfolio-return">0.00%</strong></span><span>수익금 <strong id="portfolio-profit">₩0</strong></span><span>USD/KRW <strong id="portfolio-fx">₩1,380</strong></span></div>
           <div class="currency-panel" style="margin-top:18px"><div><div class="currency-label">CASH · KRW</div><div class="currency-amount" id="portfolio-krw">₩10,000,000</div></div><div class="swap">+</div><div><div class="currency-label">CASH · USD</div><div class="currency-amount" id="portfolio-usd">$0.00</div></div></div>
         </section>
-        <section class="card"><div class="card-heading"><div><h2 class="card-title">보유 종목</h2><p class="card-description">평가 손익은 예시 시세를 기준으로 계산됩니다.</p></div></div><div id="portfolio-holdings" class="holdings"></div></section>
+        <section class="card"><div class="card-heading"><div><h2 class="card-title">보유 종목</h2><p class="card-description">평가 손익은 현재 게임 기준 가격으로 계산됩니다.</p></div></div><div id="portfolio-holdings" class="holdings"></div></section>
       </div>
       <section class="card" style="margin-top:15px">
-        <div class="card-heading"><div><h2 class="card-title">최근 거래</h2><p class="card-description" id="history-storage-copy">이 브라우저에 저장된 모의 주문 내역</p></div></div>
+        <div class="card-heading"><div><h2 class="card-title">최근 거래</h2><p class="card-description">가상 거래 내역</p></div></div>
         <div style="overflow-x:auto"><table class="history"><thead><tr><th>날짜</th><th>구분</th><th>종목</th><th>수량</th><th>체결가</th><th>합계</th></tr></thead><tbody id="history-rows"></tbody></table></div>
       </section>
     </section>
@@ -435,12 +433,12 @@
       <section class="card">
         <div class="card-heading"><div><h2 class="card-title">이번 시즌 개인 기록</h2><p class="card-description">최고와 최저 기록은 참가자 전체의 수익률을 비교합니다.</p></div></div>
         <div id="hall-of-fame-full" class="halls"></div>
-        <p class="privacy-note">온라인 대회가 열리면 참가자가 공개에 동의한 별명·학교·수익률이 명예의 전당에 표시됩니다. 실명·연락처·계좌 정보는 올리지 마세요.</p>
+        <p class="privacy-note">명예의 전당에는 별명·학교·수익률이 표시됩니다. 실명이나 연락처는 입력하지 마세요.</p>
       </section>
       <section class="card" style="margin-top:15px"><div class="card-heading"><div><h2 class="card-title">학교 대항 순위</h2><p class="card-description">학교별 수익금 합계와 참가자 평균 수익률.</p></div></div><div id="school-leaderboard-full" class="leader-list"></div></section>
     </section>
 
-    <footer class="footer"><span>CAMPUS LEAGUE · 모의투자 교육용 프로토타입</span><span>실제 주문·환전 없음 · 예시 시세는 투자 판단에 사용할 수 없습니다.</span></footer>
+    <footer class="footer"><span>CAMPUS LEAGUE · 가상 투자 게임</span><span>모든 거래와 환전은 가상으로 진행됩니다.</span></footer>
   </div>
   <dialog class="school-dialog" id="school-dialog" aria-labelledby="school-dialog-title">
     <div class="school-dialog-content">
@@ -498,7 +496,7 @@
       function formatUSD(n) { return "$" + Number(n || 0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
       function quoteContext(asset) {
         if (asset.freshness === "demo") return "예시 시세";
-        if (asset.freshness === "real_time") return asset.source && asset.source.includes("_REST") ? "KIS 현재가" : "실시간";
+        if (asset.freshness === "real_time") return "실시간";
         if (asset.freshness === "end_of_day") {
           const date = asset.asOf ? new Date(asset.asOf).toLocaleDateString("ko-KR", { timeZone:"Asia/Seoul", year:"numeric", month:"2-digit", day:"2-digit" }) : "최근 거래일";
           return "장 마감 · " + date + " 종가";
@@ -578,13 +576,13 @@
           });
           const shown = matched.slice(0,25);
           status.textContent = matched.length
-            ? matched.length + "개 검색됨 · 먼저 25개를 표시합니다. 선택하면 KIS 가격을 불러옵니다."
+            ? matched.length + "개 검색됨 · 먼저 25개를 표시합니다. 선택하면 현재가를 불러옵니다."
             : "검색 결과가 없습니다. 종목명이나 티커를 다시 확인하세요.";
           results.innerHTML = shown.map(item =>
             '<article class="stock-result"><div style="min-width:0"><div class="stock-result-name">' + escapeHTML(item.name) + '</div><div class="stock-result-meta">' +
             escapeHTML(item.exchange_name) + ' · ' + escapeHTML(item.symbol) + (item.english_name ? ' · ' + escapeHTML(item.english_name) : '') +
             '</div></div><button class="stock-result-action" type="button" data-quote-symbol="' + escapeHTML(item.symbol) + '" data-quote-market="' + escapeHTML(item.market) +
-            '" data-quote-exchange="' + escapeHTML(item.exchange) + '" data-quote-exchange-name="' + escapeHTML(item.exchange_name) + '" data-quote-name="' + escapeHTML(item.name) + '">KIS 가격 조회</button></article>'
+            '" data-quote-exchange="' + escapeHTML(item.exchange) + '" data-quote-exchange-name="' + escapeHTML(item.exchange_name) + '" data-quote-name="' + escapeHTML(item.name) + '">현재가 조회</button></article>'
           ).join("");
           results.querySelectorAll("[data-quote-symbol]").forEach(button => button.addEventListener("click", () => {
             lookupSearchQuote({
@@ -598,7 +596,7 @@
         } catch (error) {
           if (generation !== stockSearchGeneration) return;
           results.replaceChildren();
-          status.textContent = error.message || "종목 목록을 불러오지 못했어요.";
+          status.textContent = "종목 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
         }
       }
       function registerQuoteAsset(quote, listing = null) {
@@ -656,7 +654,7 @@
         const status = document.getElementById("stock-search-status");
         button.disabled = true;
         button.textContent = "조회 중…";
-        status.textContent = item.name + " KIS 시세를 불러오는 중…";
+        status.textContent = item.name + " 시세를 불러오는 중…";
         try {
           const params = new URLSearchParams({
             market:item.market, symbol:item.symbol, exchange:item.exchange, name:item.name,
@@ -665,7 +663,7 @@
             headers:{ Accept:"application/json" }, cache:"no-store",
           });
           const quote = await response.json();
-          if (!response.ok) throw new Error(quote.message || quote.error || "KIS 시세 조회에 실패했어요.");
+          if (!response.ok) throw new Error("시세를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
           const asset = registerQuoteAsset(quote, item);
           pinSearchSymbol(item.symbol);
           selectedAsset = asset;
@@ -678,13 +676,13 @@
           render();
           status.textContent = quote.freshness === "end_of_day"
             ? item.name + " 최근 종가를 불러왔어요. 장이 열리면 다시 조회해 가상 거래할 수 있습니다."
-            : item.name + " KIS 현재가를 불러왔어요. 이 가격은 가상 거래에만 사용됩니다.";
+            : item.name + " 현재가를 불러왔어요. 이 가격은 가상 거래에만 사용됩니다.";
           renderStockSearch();
           toast(item.name + " 시세를 불러왔어요. 실제 주문 없이 가상 거래합니다.");
         } catch (error) {
           button.disabled = false;
           button.textContent = "다시 조회";
-          status.textContent = error.message || "KIS 시세 조회에 실패했어요.";
+          status.textContent = "시세를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
           toast(status.textContent);
         }
       }
@@ -737,12 +735,22 @@
         node.textContent = message;
         node.className = "nickname-check" + (stateName ? " " + stateName : "");
       }
-      async function checkNicknameAvailability(value) {
+      async function checkNicknameAvailability(value, verifiedUser) {
         const nickname = String(value || "").trim(), requestId = ++nicknameCheckRequest;
         if (nickname.length < 1 || nickname.length > 20) { setNicknameCheck("별명은 1~20자로 입력해주세요.", "error"); return false; }
-        if (!remoteClient || !remoteMode) { setNicknameCheck("온라인 리그 연결 후 중복 여부를 확인합니다.", "pending"); return false; }
+        if (!remoteClient || !remoteMode) { setNicknameCheck("카카오 로그인 후 별명 중복을 확인할 수 있어요.", "pending"); return false; }
         setNicknameCheck("별명 중복 확인 중…", "pending");
         try {
+          let user = verifiedUser;
+          if (!user) {
+            const { data:sessionData, error:sessionError } = await remoteClient.auth.getSession();
+            if (sessionError) throw sessionError;
+            user = sessionData && sessionData.session ? sessionData.session.user : null;
+          }
+          if (!hasKakaoIdentity(user)) {
+            if (requestId === nicknameCheckRequest) setNicknameCheck("카카오 로그인 후 별명 중복을 확인할 수 있어요.", "pending");
+            return false;
+          }
           const { data, error } = await remoteClient.rpc("is_campus_nickname_available", { p_nickname:nickname });
           if (error) throw error;
           if (requestId !== nicknameCheckRequest) return false;
@@ -750,7 +758,7 @@
           setNicknameCheck(available ? "사용할 수 있는 별명입니다." : "이미 사용 중인 별명입니다. 다른 별명을 입력해주세요.", available ? "available" : "taken");
           return available;
         } catch (_) {
-          if (requestId === nicknameCheckRequest) setNicknameCheck("중복 확인에 실패했어요. Supabase의 최신 SQL을 적용했는지 확인해주세요.", "error");
+          if (requestId === nicknameCheckRequest) setNicknameCheck("별명 확인을 완료하지 못했어요. 잠시 후 다시 시도해주세요.", "error");
           return false;
         }
       }
@@ -813,29 +821,17 @@
       function renderLeaderboard() {
         const nodeIds = ["school-leaderboard","school-leaderboard-full"];
         const nodes = nodeIds.map(id => document.getElementById(id));
-        const note = document.getElementById("leaderboard-privacy-note");
-        if (note) note.textContent = remoteMode
-          ? "Supabase 온라인 DB에서 불러온 학교 순위입니다. 참가 정보와 모의 투자 성과가 온라인으로 저장됩니다."
-          : "지금은 이 브라우저에 저장되는 데모입니다. 실제 학교 간 순위는 Supabase 연결이 완료되면 공유됩니다.";
         if (remoteMode && remoteSummary) {
           const schools = remoteSummary.schools || [];
           const html = schools.length ? schools.map((school,index) =>
-            '<div class="leader-row"><span class="rank ' + (index===0 ? "first" : "") + '">' + String(index+1).padStart(2,"0") + '</span><div><div class="leader-school">' + escapeHTML(school.school) + '</div><div class="leader-count">' + Number(school.players).toLocaleString("ko-KR") + '명 참가 · 온라인 리그</div></div><div class="leader-score"><div class="leader-profit ' + signedClass(school.profit_krw) + '">' + (school.profit_krw >= 0 ? "+" : "−") + formatKRW(Math.abs(school.profit_krw)) + '</div><div class="leader-return ' + signedClass(school.avg_return_pct) + '">평균 ' + formatReturn(school.avg_return_pct) + '</div></div></div>'
+            '<div class="leader-row"><span class="rank ' + (index===0 ? "first" : "") + '">' + String(index+1).padStart(2,"0") + '</span><div><div class="leader-school">' + escapeHTML(school.school) + '</div><div class="leader-count">' + Number(school.players).toLocaleString("ko-KR") + '명 참가</div></div><div class="leader-score"><div class="leader-profit ' + signedClass(school.profit_krw) + '">' + (school.profit_krw >= 0 ? "+" : "−") + formatKRW(Math.abs(school.profit_krw)) + '</div><div class="leader-return ' + signedClass(school.avg_return_pct) + '">평균 ' + formatReturn(school.avg_return_pct) + '</div></div></div>'
           ).join("") : '<div class="empty">아직 참가한 학교가 없습니다.<br>첫 번째 학교가 되어보세요.</div>';
           nodes.forEach(node => { node.innerHTML = html; });
           document.getElementById("stat-school").textContent = state.profile ? state.profile.school : (schools[0] ? schools[0].school : "참가 전");
           return;
         }
-        if (!state.profile) {
-          nodes.forEach(node => { node.innerHTML = '<div class="empty">첫 번째 학교가 참가하면<br>이곳에 순위가 표시됩니다.</div>'; });
-          document.getElementById("stat-school").textContent = "참가 전";
-          return;
-        }
-        const m = metrics();
-        nodes.forEach(node => {
-          node.innerHTML = '<div class="leader-row"><span class="rank first">01</span><div><div class="leader-school">' + escapeHTML(state.profile.school) + '</div><div class="leader-count">데모 참가자 1명 · 이 기기 기준</div></div><div class="leader-score"><div class="leader-profit ' + signedClass(m.profit) + '">' + (m.profit >= 0 ? "+" : "−") + formatKRW(Math.abs(m.profit)) + '</div><div class="leader-return ' + signedClass(m.returnPct) + '">평균 ' + formatReturn(m.returnPct) + '</div></div></div>';
-        });
-        document.getElementById("stat-school").textContent = state.profile.school;
+        nodes.forEach(node => { node.innerHTML = '<div class="empty">학교별 참가 현황과 수익률이 표시됩니다.</div>'; });
+        document.getElementById("stat-school").textContent = state.profile ? state.profile.school : "참가 전";
       }
       function renderHalls() {
         const m = metrics();
@@ -843,11 +839,11 @@
         const best = remoteMode && remoteSummary ? remoteSummary.best : null;
         const worst = remoteMode && remoteSummary ? remoteSummary.worst : null;
         const maxName = best ? best.nickname : enabled ? state.profile.nickname : "기록 대기 중";
-        const maxSchool = best ? best.school : enabled ? state.profile.school : "온라인 리그 연결 후 공개";
+        const maxSchool = best ? best.school : enabled ? state.profile.school : "—";
         const returnText = best ? formatReturn(best.return_pct) : enabled ? formatReturn(m.returnPct) : "—";
         const cls = best ? signedClass(best.return_pct) : enabled ? signedClass(m.returnPct) : "muted";
         const worstName = worst ? worst.nickname : enabled ? state.profile.nickname : "기록 대기 중";
-        const worstSchool = worst ? worst.school : enabled ? state.profile.school : "온라인 리그 연결 후 공개";
+        const worstSchool = worst ? worst.school : enabled ? state.profile.school : "—";
         const worstReturn = worst ? formatReturn(worst.return_pct) : enabled ? formatReturn(m.returnPct) : "—";
         const worstClass = worst ? signedClass(worst.return_pct) : enabled ? signedClass(m.returnPct) : "muted";
         const cards = '<article class="hall"><p class="hall-kicker">↗ BEST · 최고 수익률</p><span class="hall-avatar">✦</span><div class="hall-name">' + escapeHTML(maxName) + '</div><div class="hall-school">' + escapeHTML(maxSchool) + '</div><div class="hall-return ' + cls + '">' + returnText + '</div></article>' +
@@ -894,7 +890,7 @@
         const blockedByQuote = (remoteMode && (!remoteQuote || !remoteQuote.is_tradable || (selectedAsset.currency === "USD" && !fxTradable))) ||
           (!selectedAsset.tradable && selectedAsset.freshness !== "demo") || quoteExpired(selectedAsset);
         submit.disabled = blockedByQuote;
-        submit.title = blockedByQuote ? "매매 가능한 시세를 연결한 뒤 온라인 주문이 열립니다." : "";
+        submit.title = blockedByQuote ? "현재가가 확인된 종목만 가상 매매할 수 있습니다." : "";
         document.getElementById("trade-status").textContent = !state.profile
           ? "먼저 리그 참가 후 주문할 수 있습니다."
           : quoteExpired(selectedAsset)
@@ -934,22 +930,22 @@
           status.textContent = authGateMessage || (authenticated
             ? "카카오 계정으로 로그인됐습니다."
             : !remoteMode
-              ? "Supabase 온라인 리그 연결을 확인하고 있어요."
+              ? "로그인 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
               : authUser && authUser.is_anonymous
-                ? "이전에 참가한 임시 계정입니다. 카카오를 연결하면 같은 참가 기록을 유지합니다."
+                ? "카카오 로그인 후 참가 기록을 이용할 수 있어요."
                 : "카카오 로그인 후 게임 별명과 학교를 등록하면 참가할 수 있어요.");
         }
         if (accountStatus) {
           accountStatus.textContent = hasKakaoIdentity(authUser)
-            ? "카카오 로그인 연결 완료 · 공개 순위에는 게임 별명과 학교만 표시됩니다."
+            ? "카카오 로그인 완료 · 순위에는 게임 별명과 학교만 공개됩니다."
             : authUser && authUser.is_anonymous
-              ? "이전 임시 참가 계정입니다. 카카오 연결을 완료하면 이 계정의 기록이 유지됩니다."
-              : "카카오 로그인으로 계정을 복구할 수 있습니다. 카카오 프로필 이름은 공개되지 않습니다.";
+              ? "카카오 로그인 후 참가 기록을 이용할 수 있어요."
+              : "공개 순위에는 게임 별명과 학교만 표시됩니다.";
         }
       }
       async function connectKakaoAccount() {
         try {
-          if (!remoteClient || !remoteMode) throw new Error("온라인 리그 연결이 준비된 뒤 다시 시도해주세요.");
+          if (!remoteClient || !remoteMode) throw new Error("지금은 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
           const { data, error } = await remoteClient.auth.getSession();
           if (error) throw error;
           const user = data && data.session ? data.session.user : null;
@@ -972,29 +968,29 @@
           authGateMessage = "카카오 로그인 화면으로 이동합니다.";
           updateAuthGate();
         } catch (error) {
-          authGateMessage = error.message || "카카오 로그인에 실패했어요.";
+          authGateMessage = "카카오 로그인에 실패했어요. 잠시 후 다시 시도해주세요.";
           updateAuthGate();
           toast(authGateMessage);
         }
       }
       function render() {
         const m = metrics();
-        document.getElementById("data-mode").textContent = !remoteMode ? "DEMO MODE" : allQuotesAreRealtime() ? "ONLINE · REALTIME" : allQuotesHaveData() ? "ONLINE · MARKET DATA" : anyQuotesHaveData() ? "ONLINE · PARTIAL" : "ONLINE · DEMO QUOTES";
+        document.getElementById("data-mode").textContent = "가상 투자";
         document.querySelectorAll(".price-heading").forEach(node => { node.textContent = allQuotesAreRealtime() ? "현재가" : anyQuotesHaveData() ? "참고 가격" : "예시 가격"; });
         const notice = document.getElementById("data-notice-copy");
         if (!remoteMode) {
-          notice.innerHTML = "<strong>미리보기 모드</strong> — 아래 가격은 게임 흐름을 보여주기 위한 예시 시세이며 실제 주가가 아닙니다. 실전 리그는 시세 제공자 연결과 온라인 데이터베이스 설정이 끝난 뒤 시작할 수 있습니다.";
+          notice.innerHTML = "<strong>가상 투자 게임</strong> — 가격은 실제 시세와 다를 수 있으며 거래는 게임 계좌에만 반영됩니다.";
         } else if (!anyQuotesHaveData()) {
-          notice.innerHTML = "<strong>온라인 DB 연결됨 · 시세 미연결</strong> — 참가자와 순위는 공유할 수 있지만 현재 표시는 예시 가격입니다. 유효한 시장 데이터가 연결될 때까지 온라인 주문은 잠겨 있습니다.";
+          notice.innerHTML = "<strong>가격 정보 대기 중</strong> — 가격이 표시되는 종목만 거래할 수 있습니다.";
         } else if (!allQuotesHaveData()) {
-          notice.innerHTML = "<strong>일부 시세만 연결됨</strong> — 연결된 시장 가격은 참고용으로 표시하고, 아직 연결되지 않은 종목은 예시값입니다. 시장별 API가 준비될 때까지 해당 종목의 온라인 주문은 잠겨 있습니다.";
+          notice.innerHTML = "<strong>일부 종목 가격 정보 대기 중</strong> — 종목별 표시 시점을 확인한 뒤 거래하세요.";
         } else if (allQuotesAreRealtime()) {
-          notice.innerHTML = "<strong>실시간 시세 연결됨</strong> — 주가와 환율은 모의 계좌 평가에만 사용됩니다. 실제 투자·환전은 발생하지 않습니다.";
+          notice.innerHTML = "<strong>실시간 가격 반영 중</strong> — 매수·매도와 환전은 가상 계좌에만 반영됩니다.";
         } else {
-          notice.innerHTML = "<strong>온라인 시세 연결됨</strong> — 시장별 시세 지연 또는 장마감 기준이 다를 수 있습니다. 항목별 시세 상태를 확인하세요. 실제 투자·환전은 발생하지 않습니다.";
+          notice.innerHTML = "<strong>가격 기준 시점 안내</strong> — 종목마다 시세 지연 또는 장마감 기준이 다를 수 있습니다. 가격과 날짜를 확인하세요.";
         }
-        document.getElementById("fx-label").textContent = fxFreshness === "demo" ? "게임 환율" : "USD/KRW 환율";
-        document.getElementById("fx-freshness").textContent = fxFreshness === "demo" ? "· 예시 값" : "· " + fxFreshness;
+        document.getElementById("fx-label").textContent = "USD/KRW 환율";
+        document.getElementById("fx-freshness").textContent = "· " + ({ demo:"예시 환율", real_time:"실시간", end_of_day:"최근 거래일", delayed:"지연 시세" }[fxFreshness] || "환율");
         document.getElementById("exchange-submit").disabled = remoteMode && !fxTradable;
         document.getElementById("stat-assets").textContent = formatKRW(m.total);
         document.getElementById("stat-return").textContent = formatReturn(m.returnPct);
@@ -1002,7 +998,7 @@
         document.getElementById("stat-profit").textContent = "수익금 " + (m.profit >= 0 ? "+" : "−") + formatKRW(Math.abs(m.profit));
         document.getElementById("stat-profit").className = "stat-sub " + signedClass(m.profit);
         document.getElementById("stat-fx").textContent = formatKRW(USDKRW);
-        document.getElementById("stat-fx-sub").textContent = fxFreshness === "demo" ? "예시 환율 · 게임용" : "USD/KRW · " + fxFreshness;
+        document.getElementById("stat-fx-sub").textContent = ({ demo:"예시 환율", real_time:"실시간 환율", end_of_day:"최근 거래일 환율", delayed:"지연 환율" }[fxFreshness] || "USD/KRW 환율");
         document.getElementById("fx-display").textContent = "1 USD = " + formatKRW(USDKRW);
         document.getElementById("cash-krw").textContent = formatKRW(state.wallet.krw);
         document.getElementById("cash-usd").textContent = formatUSD(state.wallet.usd);
@@ -1017,18 +1013,11 @@
         document.getElementById("join-card").classList.toggle("hidden", Boolean(state.profile));
         document.getElementById("profile-card").classList.toggle("hidden", !state.profile);
         const joinCopy = document.getElementById("join-copy");
-        if (joinCopy) joinCopy.textContent = remoteMode
-          ? "온라인 리그에 별명과 학교를 등록하고, 계정에 가상자금 1,000만원을 받으세요."
-          : "현재는 개인 기기에서만 저장되는 미리보기입니다. 학교 이름과 별명을 정하면 가상 계좌가 만들어져요.";
-        const profileCopy = document.getElementById("profile-storage-copy");
-        if (profileCopy) profileCopy.textContent = remoteMode ? "Supabase 온라인 계정에 저장된 참가 정보입니다." : "현재 기기에 저장된 데모 계정입니다.";
-        const profileLabel = document.getElementById("profile-storage-label");
-        if (profileLabel) profileLabel.textContent = remoteMode ? "ONLINE" : "LOCAL";
-        const historyCopy = document.getElementById("history-storage-copy");
-        if (historyCopy) historyCopy.textContent = remoteMode ? "Supabase 온라인 계정에 저장된 주문 내역" : "이 브라우저에 저장된 모의 주문 내역";
+        if (joinCopy) joinCopy.textContent = "별명과 학교를 등록하고 가상자금 1,000만원으로 시작하세요.";
+        
         if (state.profile) {
           document.getElementById("profile-name").textContent = state.profile.nickname;
-          document.getElementById("profile-school").textContent = state.profile.school + " · 데모 계정";
+          document.getElementById("profile-school").textContent = state.profile.school;
         }
         renderAssetRows("market-rows");
         renderAssetRows("market-rows-secondary");
@@ -1095,20 +1084,20 @@
         if (remoteMode && remoteClient) {
           try {
             window.clearTimeout(nicknameCheckTimer);
-            const available = await checkNicknameAvailability(nickname);
-            if (!available) { toast(document.getElementById("nickname-check").textContent || "이미 사용 중인 별명입니다."); nicknameInput.focus(); return; }
             const { data,error } = await remoteClient.auth.getSession();
             if (error) throw error;
             const user = data && data.session ? data.session.user : null;
             if (!hasKakaoIdentity(user)) throw new Error("카카오 로그인을 먼저 완료해주세요.");
+            const available = await checkNicknameAvailability(nickname, user);
+            if (!available) { toast(document.getElementById("nickname-check").textContent || "이미 사용 중인 별명입니다."); nicknameInput.focus(); return; }
             const joined = await remoteClient.rpc("join_campus_league", { p_nickname:nickname, p_school_name:school });
             if (joined.error) throw joined.error;
             await refreshRemotePortfolio();
             await refreshRemoteOverview();
-            toast("온라인 리그에 참가했어요. 가상자금 1,000만원이 지급됐습니다.");
+            toast("리그에 참가했어요. 가상자금 1,000만원을 받았습니다.");
             return;
           } catch (error) {
-            toast(error.message || "온라인 참가에 실패했어요.");
+            toast(error.message && (error.message.includes("이미 사용 중인 별명") || error.message.includes("대학교 이름") || error.message.includes("로그인이 필요") || error.message.includes("카카오 로그인")) ? error.message : "참가 신청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.");
             return;
           }
         }
@@ -1132,7 +1121,7 @@
         const school = window.prompt("대학교 이름을 수정하세요.", state.profile.school);
         if (school === null || !school.trim()) return;
         state.profile = { nickname:nickname.trim().slice(0,20), school:school.trim().slice(0,80) };
-        saveState(); render(); toast("데모 참가 정보가 수정됐어요.");
+        saveState(); render(); toast("참가 정보가 수정됐어요.");
       });
       document.getElementById("exchange-form").addEventListener("submit", async event => {
         event.preventDefault();
@@ -1144,7 +1133,7 @@
           if (error) { toast(error.message); return; }
           document.getElementById("exchange-amount").value = "";
           await refreshRemotePortfolio();
-          toast("온라인 계좌에서 원화를 환전했어요.");
+          toast("가상 계좌에서 원화를 환전했어요.");
           return;
         }
         if (amount > state.wallet.krw) { toast("보유 원화보다 큰 금액은 환전할 수 없어요."); return; }
@@ -1163,7 +1152,7 @@
               if (result.error) { toast(result.error.message); return; }
               await refreshRemotePortfolio();
               await refreshRemoteOverview();
-              toast("온라인 모의 주문이 처리됐어요.");
+              toast("가상 주문이 처리됐어요.");
             });
           return;
         }
@@ -1181,7 +1170,7 @@
         }
         state.trades.push({ symbol:selectedAsset.symbol, side:selectedSide, quantity, price:selectedAsset.price, currency:selectedAsset.currency, at:new Date().toISOString() });
         saveState(); render();
-        toast((selectedSide === "buy" ? "매수" : "매도") + " 주문이 데모 계좌에 반영됐어요.");
+        toast((selectedSide === "buy" ? "매수" : "매도") + " 주문이 가상 계좌에 반영됐어요.");
       });
       async function refreshRemotePortfolio() {
         if (!remoteClient) return;
@@ -1196,7 +1185,7 @@
         remoteMode = true;
         saveState();
         render();
-        document.getElementById("profile-school").textContent = state.profile.school + " · 온라인 계정";
+        document.getElementById("profile-school").textContent = state.profile.school;
         document.getElementById("join-card").classList.add("hidden");
       }
       async function refreshRemoteOverview() {
@@ -1227,7 +1216,7 @@
         remoteMode = true;
         saveState();
         render();
-        document.getElementById("profile-school").textContent = state.profile.school + " · 온라인 계정";
+        document.getElementById("profile-school").textContent = state.profile.school;
       }
       window.CampusLeague = {
         setClient(client) { remoteClient = client; updateAuthGate(); },
@@ -1260,7 +1249,7 @@
         if (window.CampusLeague) window.CampusLeague.setAuthUser(session ? session.user : null);
       });
       const overview = await client.rpc("get_campus_league_overview");
-      if (overview.error && window.CampusLeague) window.CampusLeague.setAuthGateError("온라인 리그 DB에 연결되지 않았습니다. 잠시 후 다시 불러와주세요.");
+      if (overview.error && window.CampusLeague) window.CampusLeague.setAuthGateError("리그를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
       if (!overview.error && window.CampusLeague) {
         window.CampusLeague.applyRemoteOverview(overview.data);
         const session = await client.auth.getSession();
@@ -1289,7 +1278,7 @@
           })
           .subscribe();
       } else if (window.CampusLeague) {
-        window.CampusLeague.setAuthGateError("온라인 리그 DB에 연결되지 않았습니다. Supabase 설정을 확인해주세요.");
+        window.CampusLeague.setAuthGateError("리그를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
       }
     }
   </script>

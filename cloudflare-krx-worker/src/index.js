@@ -5,6 +5,9 @@ const SITE_ORIGIN = "https://jjanggoo5950-code.github.io";
 const US_EXCHANGES = new Set(["NAS", "NYS", "AMS"]);
 const KRX_SYMBOLS = ["005930", "000660", "035420", "005380"];
 const SNAPSHOT_INTERVAL_MS = 15 * 60 * 1000;
+const FX_REFRESH_INTERVAL_MS = 60 * 1000;
+const FX_SYMBOL = "USD/KRW";
+const KIS_FX_CODE = "XFX@KRW";
 const SNAPSHOT_ASSETS = [
   { symbol: "005930", market: "KR", name: "삼성전자", currency: "KRW" },
   { symbol: "000660", market: "KR", name: "SK하이닉스", currency: "KRW" },
@@ -111,9 +114,12 @@ export class KisCollector {
     this.status = "starting";
     this.lastTickAt = null;
     this.lastError = null;
-      this.lastSnapshotAt = null;
-      this.lastSnapshotError = null;
-      this.snapshotsRefreshing = null;
+    this.lastSnapshotAt = null;
+    this.lastSnapshotError = null;
+    this.snapshotsRefreshing = null;
+    this.lastFxAt = null;
+    this.lastFxError = null;
+    this.fxRefreshing = null;
     this.lastPublishedAt = new Map();
     this.quoteCache = new Map();
   }
@@ -122,11 +128,15 @@ export class KisCollector {
     const path = new URL(request.url).pathname;
     if (path === "/status" && request.method === "GET") {
       const savedSnapshotStatus = await this.ctx.storage.get("dailySnapshotStatus");
+      const savedFxStatus = await this.ctx.storage.get("fxQuoteStatus");
       return Response.json({
         service: "KIS KRX quote collector",
         status: this.status,
         realtime_kr_symbols: KRX_SYMBOLS,
         daily_snapshot_symbols: SNAPSHOT_ASSETS.map((asset) => asset.symbol),
+        fx_symbol: FX_SYMBOL,
+        last_fx_at: this.lastFxAt || savedFxStatus?.at || null,
+        last_fx_error: this.lastFxError ?? savedFxStatus?.error ?? null,
         last_tick_at: this.lastTickAt,
         last_error: this.lastError,
         last_snapshot_at: this.lastSnapshotAt || savedSnapshotStatus?.at || null,
@@ -144,6 +154,12 @@ export class KisCollector {
           at: new Date().toISOString(),
           error: this.lastSnapshotError,
         });
+      }
+
+      try {
+        await this.refreshFxQuoteIfDue();
+      } catch (error) {
+        this.lastFxError = this.safeError(error);
       }
 
       try {
@@ -196,6 +212,12 @@ export class KisCollector {
         at: new Date().toISOString(),
         error: this.lastSnapshotError,
       });
+    }
+
+    try {
+      await this.refreshFxQuoteIfDue();
+    } catch (error) {
+      this.lastFxError = this.safeError(error);
     }
 
     try {
@@ -383,6 +405,98 @@ export class KisCollector {
       at: this.lastSnapshotAt,
       error: this.lastSnapshotError,
     });
+  }
+
+  async refreshFxQuoteIfDue() {
+    if (this.fxRefreshing) return this.fxRefreshing;
+    const now = Date.now();
+    const lastAttempt = Number(await this.ctx.storage.get("fxQuoteAttemptAt") || 0);
+    if (now - lastAttempt < FX_REFRESH_INTERVAL_MS) return;
+
+    this.fxRefreshing = this.refreshFxQuote(now);
+    try {
+      await this.fxRefreshing;
+    } finally {
+      this.fxRefreshing = null;
+    }
+  }
+
+  async refreshFxQuote(now) {
+    await this.ctx.storage.put("fxQuoteAttemptAt", now);
+    try {
+      const accessToken = await this.getRestAccessToken();
+      const url = new URL(`${KIS_REST_URL}/uapi/overseas-price/v1/quotations/inquire-time-indexchartprice`);
+      url.search = new URLSearchParams({
+        FID_COND_MRKT_DIV_CODE: "X",
+        FID_INPUT_ISCD: KIS_FX_CODE,
+        FID_HOUR_CLS_CODE: "0",
+        FID_PW_DATA_INCU_YN: "Y",
+      }).toString();
+      const response = await fetch(url, {
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          authorization: `Bearer ${accessToken}`,
+          appkey: this.env.KIS_APP_KEY,
+          appsecret: this.env.KIS_APP_SECRET,
+          custtype: "P",
+          tr_id: "FHKST03030200",
+        },
+      });
+      if (!response.ok) throw new Error(`kis_fx_http_${response.status}`);
+      const body = await response.json();
+      if (String(body.rt_cd) !== "0") {
+        throw new Error(`kis_fx_${body.msg_cd || body.rt_cd || "error"}`);
+      }
+
+      const output = Array.isArray(body.output1) ? (body.output1[0] || {}) : (body.output1 || body.output || {});
+      const rows = Array.isArray(body.output2) ? body.output2 : body.output2 ? [body.output2] : [];
+      const latest = rows.slice().sort((a, b) => {
+        const stampA = String(a.stck_bsop_date || "") + String(a.stck_cntg_hour || "");
+        const stampB = String(b.stck_bsop_date || "") + String(b.stck_cntg_hour || "");
+        return stampB.localeCompare(stampA);
+      })[0] || {};
+      const price = [output, latest].map((row) => Number(
+        row.ovrs_nmix_prpr ?? row.fx_rate ?? row.prpr ?? row.ovrs_nmix_prdy_clpr
+      )).find((value) => Number.isFinite(value) && value > 0);
+      if (!price) throw new Error("kis_fx_price_missing");
+
+      const date = String(latest.stck_bsop_date || output.stck_bsop_date || "").replace(/\D/g, "");
+      const time = String(latest.stck_cntg_hour || output.stck_cntg_hour || "").replace(/\D/g, "").padStart(6, "0");
+      let asOf = new Date(now).toISOString();
+      if (/^\d{8}$/.test(date) && /^\d{6}$/.test(time)) {
+        const localStamp = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}T${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}+09:00`;
+        const parsed = new Date(localStamp);
+        if (Number.isFinite(parsed.getTime())) asOf = parsed.toISOString();
+      }
+      const ageMs = Math.max(0, now - Date.parse(asOf));
+      const change = Number(output.prdy_ctrt ?? output.ovrs_nmix_prdy_ctrt ?? latest.prdy_ctrt ?? 0);
+      const quote = {
+        symbol: FX_SYMBOL,
+        market: "FX",
+        name: FX_SYMBOL,
+        price,
+        currency: "KRW",
+        change_pct: Number.isFinite(change) ? Number(change.toFixed(4)) : 0,
+        source: "KIS_FX_REST",
+        freshness: ageMs <= 120_000 ? "real_time" : "delayed",
+        is_tradable: ageMs <= 7 * 24 * 60 * 60 * 1000,
+        as_of: asOf,
+        updated_at: new Date(now).toISOString(),
+      };
+      if (!quote.is_tradable) throw new Error("kis_fx_quote_too_old");
+      if (!await this.publishQuote(quote)) throw new Error("fx_quote_storage_failed");
+
+      this.lastFxAt = quote.updated_at;
+      this.lastFxError = null;
+      await this.ctx.storage.put("fxQuoteStatus", { at: this.lastFxAt, error: null });
+    } catch (error) {
+      this.lastFxError = this.safeError(error);
+      await this.ctx.storage.put("fxQuoteStatus", {
+        at: this.lastFxAt,
+        error: this.lastFxError,
+      });
+      throw error;
+    }
   }
 
   async getRestAccessToken() {

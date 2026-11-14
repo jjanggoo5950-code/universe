@@ -1,6 +1,6 @@
 # Cloudflare KIS KRX collector
 
-This Worker keeps KIS credentials on Cloudflare and upserts quotes to the Campus League Supabase `market_quotes` table. It streams four baseline KRX stocks and refreshes daily bars for four Korean and four U.S. sample stocks. The public `GET /quote` endpoint also fetches a selected listed stock on demand, so the site can search the KIS symbol catalog without requesting thousands of prices at once. During the regular session it uses KIS current-price REST endpoints; outside the session it returns the latest daily close as non-tradable. The GitHub Pages site reads stored quotes through Supabase Realtime.
+This Worker keeps KIS credentials on Cloudflare and upserts quotes to the Campus League market_quotes table. It streams four baseline KRX stocks, refreshes daily bars for four Korean and four U.S. sample stocks, and refreshes the USD/KRW rate once per minute through KIS FX index data. The public GET /quote endpoint fetches a selected listed stock on demand, so the site can search the stock catalog without requesting thousands of prices at once. During regular sessions it uses KIS current-price endpoints; outside sessions it retains the latest available quote and shows its timestamp. The site reads stored quotes through Supabase Realtime.
 
 ## Deploy from the existing GitHub repository
 
@@ -11,7 +11,7 @@ This Worker keeps KIS credentials on Cloudflare and upserts quotes to the Campus
    - `KIS_APP_KEY` — KIS Developers app key
    - `KIS_APP_SECRET` — KIS Developers app secret
    - `SUPABASE_SECRET_KEY` — the Supabase `sb_secret_...` key
-5. Save the secrets. Cloudflare will create a new Worker version. The cron trigger runs once per minute and starts or checks the collector. `/health` reports collector status, and `/quote?market=KR&symbol=005930&exchange=&name=Samsung` fetches a selected quote. The quote endpoint is limited to 30 requests per IP per minute.
+5. Save the secrets. Cloudflare will create a new Worker version. The cron trigger runs once per minute and starts or checks the collector. `/health` reports collector status, stock snapshots, and the latest FX refresh, and `/quote?market=KR&symbol=005930&exchange=&name=Samsung` fetches a selected quote. The quote endpoint is limited to 30 requests per IP per minute.
 6. In Cloudflare Workers Builds, confirm the first build after adding secrets succeeds. Then open `https://<worker-subdomain>.workers.dev/health`; it should report `connected` after a KRX tick arrives.
 
 The Supabase project URL is deliberately part of the source because it is not a credential. No KIS or Supabase secret belongs in GitHub, `index.html`, or chat. Use the Supabase secret API key, not its publishable key, for this server-side writer.
@@ -20,7 +20,7 @@ The Supabase project URL is deliberately part of the source because it is not a 
 
 Run `campus_league_setup.sql` in the Supabase SQL Editor first. It creates `market_quotes`, enables row level security, and adds the table to Supabase Realtime. The collector cannot publish until that table exists.
 
-The real-time WebSocket subscribes to Samsung Electronics, SK hynix, NAVER, and Hyundai Motor (`005930`, `000660`, `035420`, `005380`). Daily snapshots include those KRX stocks and Apple, NVIDIA, Microsoft, and Tesla (`AAPL`, `NVDA`, `MSFT`, `TSLA`). Other listed stocks are fetched only when a visitor selects them from search. KIS current-price responses are quote data only; no KIS buy or sell endpoints are called. The site uses Supabase's `execute_campus_order` RPC for simulated orders. Daily prices are marked `end_of_day`, are non-tradable, and remain available for price display after market close. USD/KRW remains a separate feed.
+The real-time WebSocket subscribes to Samsung Electronics, SK hynix, NAVER, and Hyundai Motor (`005930`, `000660`, `035420`, `005380`). Daily snapshots include those KRX stocks and Apple, NVIDIA, Microsoft, and Tesla (`AAPL`, `NVDA`, `MSFT`, `TSLA`). Other listed stocks are fetched only when a visitor selects them from search. KIS current-price responses are quote data only; no KIS buy or sell endpoints are called. The site uses Supabase's `execute_campus_order` RPC for simulated orders. Daily prices are marked `end_of_day`, are non-tradable, and remain available for price display after market close. USD/KRW is published by this Worker as a separate FX quote.
 
 ## Notes
 
