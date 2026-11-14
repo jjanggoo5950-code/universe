@@ -425,58 +425,101 @@ export class KisCollector {
     await this.ctx.storage.put("fxQuoteAttemptAt", now);
     try {
       const accessToken = await this.getRestAccessToken();
-      const url = new URL(`${KIS_REST_URL}/uapi/overseas-price/v1/quotations/inquire-time-indexchartprice`);
-      url.search = new URLSearchParams({
+      const requestFx = async (path, trId, params) => {
+        const url = new URL(KIS_REST_URL + path);
+        url.search = new URLSearchParams(params).toString();
+        const response = await fetch(url, {
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            authorization: `Bearer ${accessToken}`,
+            appkey: this.env.KIS_APP_KEY,
+            appsecret: this.env.KIS_APP_SECRET,
+            custtype: "P",
+            tr_id: trId,
+          },
+        });
+        if (!response.ok) throw new Error(`kis_fx_http_${response.status}`);
+        const body = await response.json();
+        if (String(body.rt_cd) !== "0") {
+          throw new Error(`kis_fx_${body.msg_cd || body.rt_cd || "error"}`);
+        }
+        return body;
+      };
+      const parseFxBody = (body) => {
+        const output = Array.isArray(body.output1) ? (body.output1[0] || {}) : (body.output1 || body.output || {});
+        const rows = Array.isArray(body.output2) ? body.output2 : body.output2 ? [body.output2] : [];
+        const latest = rows.slice().sort((a, b) => {
+          const stampA = String(a.stck_bsop_date || "") + String(a.stck_cntg_hour || "");
+          const stampB = String(b.stck_bsop_date || "") + String(b.stck_cntg_hour || "");
+          return stampB.localeCompare(stampA);
+        })[0] || {};
+        const price = [output, latest].flatMap((row) => [
+          row.ovrs_nmix_prpr,
+          row.fx_rate,
+          row.fxrt,
+          row.prpr,
+          row.rate,
+          row.stck_prpr,
+          row.ovrs_nmix_prdy_clpr,
+        ]).map((value) => Number(String(value ?? "").replaceAll(",", "").trim()))
+          .find((value) => Number.isFinite(value) && value > 0);
+        return { output, latest, price };
+      };
+
+      const currentParams = {
         FID_COND_MRKT_DIV_CODE: "X",
         FID_INPUT_ISCD: KIS_FX_CODE,
         FID_HOUR_CLS_CODE: "0",
         FID_PW_DATA_INCU_YN: "Y",
-      }).toString();
-      const response = await fetch(url, {
-        headers: {
-          "content-type": "application/json; charset=utf-8",
-          authorization: `Bearer ${accessToken}`,
-          appkey: this.env.KIS_APP_KEY,
-          appsecret: this.env.KIS_APP_SECRET,
-          custtype: "P",
-          tr_id: "FHKST03030200",
-        },
-      });
-      if (!response.ok) throw new Error(`kis_fx_http_${response.status}`);
-      const body = await response.json();
-      if (String(body.rt_cd) !== "0") {
-        throw new Error(`kis_fx_${body.msg_cd || body.rt_cd || "error"}`);
+      };
+      let body = null, parsed = null, currentError = null, freshness = "real_time";
+      try {
+        body = await requestFx(
+          "/uapi/overseas-price/v1/quotations/inquire-time-indexchartprice",
+          "FHKST03030200",
+          currentParams
+        );
+        parsed = parseFxBody(body);
+      } catch (error) {
+        currentError = this.safeError(error);
       }
 
-      const output = Array.isArray(body.output1) ? (body.output1[0] || {}) : (body.output1 || body.output || {});
-      const rows = Array.isArray(body.output2) ? body.output2 : body.output2 ? [body.output2] : [];
-      const latest = rows.slice().sort((a, b) => {
-        const stampA = String(a.stck_bsop_date || "") + String(a.stck_cntg_hour || "");
-        const stampB = String(b.stck_bsop_date || "") + String(b.stck_cntg_hour || "");
-        return stampB.localeCompare(stampA);
-      })[0] || {};
-      const price = [output, latest].flatMap((row) => [
-        row.ovrs_nmix_prpr,
-        row.fx_rate,
-        row.fxrt,
-        row.prpr,
-        row.rate,
-        row.stck_prpr,
-        row.ovrs_nmix_prdy_clpr,
-      ]).map((value) => Number(String(value ?? "").replaceAll(",", "").trim()))
-        .find((value) => Number.isFinite(value) && value > 0);
-      if (!price) {
-        const keys = Array.from(new Set([...Object.keys(output), ...Object.keys(latest)])).slice(0, 12).join(",");
-        throw new Error("kis_fx_price_missing_" + (keys || "empty_output"));
+      if (!parsed?.price) {
+        const endDate = new Date(now).toISOString().slice(0, 10).replaceAll("-", "");
+        const startDate = new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replaceAll("-", "");
+        body = await requestFx(
+          "/uapi/overseas-price/v1/quotations/inquire-daily-chartprice",
+          "FHKST03030100",
+          {
+            FID_COND_MRKT_DIV_CODE: "X",
+            FID_INPUT_ISCD: KIS_FX_CODE,
+            FID_INPUT_DATE_1: startDate,
+            FID_INPUT_DATE_2: endDate,
+            FID_PERIOD_DIV_CODE: "D",
+          }
+        );
+        parsed = parseFxBody(body);
+        freshness = "end_of_day";
+      }
+      if (!parsed?.price) {
+        const keys = Array.from(new Set([
+          ...Object.keys(parsed?.output || {}),
+          ...Object.keys(parsed?.latest || {}),
+        ])).slice(0, 12).join(",");
+        throw new Error("kis_fx_price_missing_" + (keys || currentError || "empty_output"));
       }
 
+      const { output, latest, price } = parsed;
       const date = String(latest.stck_bsop_date || output.stck_bsop_date || "").replace(/\D/g, "");
       const time = String(latest.stck_cntg_hour || output.stck_cntg_hour || "").replace(/\D/g, "").padStart(6, "0");
       let asOf = new Date(now).toISOString();
-      if (/^\d{8}$/.test(date) && /^\d{6}$/.test(time)) {
-        const localStamp = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}T${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}+09:00`;
-        const parsed = new Date(localStamp);
-        if (Number.isFinite(parsed.getTime())) asOf = parsed.toISOString();
+      if (/^\d{8}$/.test(date)) {
+        const timePart = freshness === "end_of_day" ? "23:59:59" : /^\d{6}$/.test(time)
+          ? `${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}`
+          : "23:59:59";
+        const localStamp = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}T${timePart}+09:00`;
+        const parsedDate = new Date(localStamp);
+        if (Number.isFinite(parsedDate.getTime())) asOf = parsedDate.toISOString();
       }
       const ageMs = Math.max(0, now - Date.parse(asOf));
       const change = Number(output.prdy_ctrt ?? output.ovrs_nmix_prdy_ctrt ?? latest.prdy_ctrt ?? 0);
@@ -488,7 +531,7 @@ export class KisCollector {
         currency: "KRW",
         change_pct: Number.isFinite(change) ? Number(change.toFixed(4)) : 0,
         source: "KIS_FX_REST",
-        freshness: ageMs <= 120_000 ? "real_time" : "delayed",
+        freshness: freshness === "end_of_day" ? freshness : ageMs <= 120_000 ? "real_time" : "delayed",
         is_tradable: ageMs <= 7 * 24 * 60 * 60 * 1000,
         as_of: asOf,
         updated_at: new Date(now).toISOString(),
