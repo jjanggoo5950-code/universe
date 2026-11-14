@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080b13">
+  <meta name="description" content="점과 기호로 그린, 천천히 움직이는 ASCII 태양계.">
+  <title>Solar System — Orbiting Code</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f3f0e7;
+      --muted: #8790a0;
+      --line: rgba(196, 208, 226, .12);
+      --gold: #f4c86a;
+      --panel: rgba(13, 18, 29, .88);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 34px 22px;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 50% 43%, rgba(29, 48, 81, .30), transparent 48%),
+        radial-gradient(ellipse at 12% 5%, rgba(66, 50, 97, .18), transparent 36%),
+        #080b13;
+      font-family: Inter, "Segoe UI", "Malgun Gothic", sans-serif;
+    }
+    .page { width: min(1120px, 100%); }
+    .masthead { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 0 4px 15px; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark { color: var(--gold); font: 23px/1 "Courier New", monospace; text-shadow: 0 0 18px #e7a84d88; }
+    .eyebrow, .status, .stage-meta, .footnote, .button, .legend-name {
+      font-family: "Courier New", "Malgun Gothic", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .eyebrow { color: #aab3c2; font-size: 11px; }
+    .status { display: flex; align-items: center; gap: 9px; color: #a5adbb; font-size: 10px; white-space: nowrap; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #8ce2bb; box-shadow: 0 0 12px #8ce2bb99; }
+    .frame { overflow: hidden; border: 1px solid rgba(203, 215, 235, .18); border-radius: 17px; background: var(--panel); box-shadow: 0 30px 90px #0008, 0 0 70px #335b9014; }
+    .frame-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--line); color: #929db0; font: 11px/1.4 "Courier New", monospace; letter-spacing: .09em; }
+    .window-dots { display: flex; gap: 6px; }
+    .window-dots i { width: 7px; height: 7px; border-radius: 50%; background: #495260; }
+    .window-dots i:first-child { background: #dc8a6c; }
+    .window-dots i:nth-child(2) { background: #e4c16d; }
+    .window-dots i:nth-child(3) { background: #85b991; }
+    .stage { position: relative; height: clamp(370px, 55vw, 520px); background: radial-gradient(ellipse at 50% 51%, #111b2b 0%, #0b111d 47%, #090d16 100%); }
+    canvas { display: block; width: 100%; height: 100%; }
+    .stage-meta { position: absolute; top: 18px; left: 20px; right: 20px; display: flex; justify-content: space-between; gap: 16px; color: #7f8a9e; font-size: 10px; pointer-events: none; }
+    .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 11px 22px; padding: 19px 22px 21px; border-top: 1px solid var(--line); }
+    .legend-item { display: inline-flex; align-items: center; gap: 8px; color: #b6becc; font-size: 11px; }
+    .legend-glyph { min-width: 22px; text-align: center; font: 13px/1 "Courier New", monospace; }
+    .legend-name { font-size: 10px; letter-spacing: .07em; }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 15px 20px; border-top: 1px solid var(--line); background: rgba(255,255,255,.018); }
+    .controls { display: flex; gap: 8px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; min-height: 35px; padding: 0 13px; border: 1px solid rgba(203, 215, 235, .18); border-radius: 7px; color: #d8dce4; background: #121a27; font-size: 10px; letter-spacing: .05em; text-decoration: none; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
+    .button:hover { border-color: #9aaac477; background: #182235; }
+    .button:active { transform: translateY(1px); }
+    .button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+    .button.primary { border-color: #e4bd6570; color: #f6d992; background: #c38a291b; }
+    .footnote { color: #7f899b; font-size: 10px; letter-spacing: .025em; text-transform: none; }
+    .footnote a { color: #bdc8dc; text-decoration-color: #72829c80; text-underline-offset: 3px; }
+    .page-note { margin: 13px 4px 0; color: #687386; font: 10px/1.7 "Courier New", "Malgun Gothic", monospace; text-align: right; }
+    @media (max-width: 640px) {
+      body { padding: 22px 12px; }
+      .masthead { align-items: flex-start; }
+      .status { padding-top: 4px; font-size: 9px; }
+      .frame { border-radius: 12px; }
+      .frame-top { padding: 12px 14px; }
+      .stage { height: 410px; }
+      .stage-meta { top: 14px; left: 14px; right: 14px; font-size: 9px; }
+      .legend { gap: 11px 14px; padding: 17px 12px; }
+      .legend-item { gap: 5px; }
+      .legend-name { font-size: 9px; }
+      .toolbar { padding: 13px; }
+      .button { padding: 0 10px; font-size: 9px; }
+      .footnote { width: 100%; text-align: right; }
+      .page-note { font-size: 9px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span><span class="eyebrow">CODE STUDY 001 · CELESTIAL MOTION</span></div>
+      <div class="status"><span class="status-dot" id="status-dot"></span><span id="status-text">SYSTEM ONLINE</span></div>
+    </header>
+
+    <section class="frame" aria-label="인터랙티브 태양계">
+      <div class="frame-top"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>solar.system.exe</span><span>8 ORBITS · 1 STAR</span></div>
+      <div class="stage">
+        <div class="stage-meta"><span>01 / THE SOLAR SYSTEM</span><span>GLYPHS IN MOTION</span></div>
+        <canvas id="universe" role="img" aria-label="태양 주위를 공전하는 여덟 행성과 별, 소행성대를 점과 문자로 그린 애니메이션"></canvas>
+      </div>
+      <div class="legend" aria-label="행성 기호 안내">
+        <span class="legend-item"><span class="legend-glyph" style="color:#d9dce3">m</span><span class="legend-name">Mercury</span></span>
+        <span class="legend-item"><span class="legend-glyph" style="color:#f1c85e">v</span><span class="legend-name">Venus</span></span>
+        <span class="legend-item"><span class="legend-glyph" style="color:#60a9ff">(E)</span><span class="legend-name">Earth</span></span>
+        <span class="legend-item"><span class="legend-glyph" style="color:#ed765b">M</span><span class="legend-name">Mars</span></span>
+        <span class="legend-item"><span class="legend-glyph" style="color:#e9a05f">&lt;J&gt;</span><span class="legend-name">Jupiter</span></span>
+        <span class="legend-item"><span class="legend-glyph" style="color:#e7c277">=S=</span><span class="legend-name">Saturn</span></span>
+        <span class="legend-item"><span class="legend-glyph" style="color:#75d8d6">{U}</span><span class="legend-name">Uranus</span></span>
+        <span class="legend-item"><span class="legend-glyph" style="color:#a99bff">{N}</span><span class="legend-name">Neptune</span></span>
+      </div>
+      <div class="toolbar">
+        <div class="controls">
+          <button class="button primary" id="pause" type="button" aria-pressed="false">Ⅱ &nbsp; PAUSE</button>
+          <button class="button" id="speed" type="button">SPEED · 1.0×</button>
+          <button class="button" id="reset" type="button">↺ &nbsp; RESET</button>
+        </div>
+        <div class="footnote">작은 우주를 그리는 파이썬 코드 · <a href="solar_system_ascii.py" download>코드 내려받기</a></div>
+      </div>
+    </section>
+    <p class="page-note">점, 문자, 빛으로 만든 태양계 · 크기와 거리는 실제 비율과 다릅니다.</p>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById('universe');
+      const ctx = canvas.getContext('2d');
+      const pauseButton = document.getElementById('pause');
+      const speedButton = document.getElementById('speed');
+      const resetButton = document.getElementById('reset');
+      const statusText = document.getElementById('status-text');
+      const statusDot = document.getElementById('status-dot');
+      const colors = {
+        mercury: '#d9dce3', venus: '#f1c85e', earth: '#60a9ff', green: '#75d98c',
+        mars: '#ed765b', jupiter: '#e9a05f', saturn: '#e7c277', uranus: '#75d8d6',
+        neptune: '#a99bff', sun: '#ffd77c'
+      };
+      const planets = [
+        { name: 'MERCURY', glyph: 'm', color: colors.mercury, orbit: .135, speed: 1.58, phase: .4, size: 12 },
+        { name: 'VENUS', glyph: 'v', color: colors.venus, orbit: .205, speed: 1.18, phase: 2.1, size: 13 },
+        { name: 'EARTH', glyph: '(E)', color: colors.earth, orbit: .275, speed: .90, phase: 4.4, size: 12 },
+        { name: 'MARS', glyph: 'M', color: colors.mars, orbit: .345, speed: .70, phase: 1.4, size: 13 },
+        { name: 'JUPITER', glyph: '<J>', color: colors.jupiter, orbit: .515, speed: .37, phase: 3.5, size: 15 },
+        { name: 'SATURN', glyph: '=S=', color: colors.saturn, orbit: .650, speed: .27, phase: 5.0, size: 14 },
+        { name: 'URANUS', glyph: '{U}', color: colors.uranus, orbit: .765, speed: .19, phase: 2.6, size: 13 },
+        { name: 'NEPTUNE', glyph: '{N}', color: colors.neptune, orbit: .875, speed: .15, phase: .8, size: 13 },
+      ];
+      let width = 0, height = 0, elapsed = 0, lastTime = 0, paused = false, speed = 1;
+      const speedSteps = [0.5, 1, 1.5, 2];
+      const stars = Array.from({ length: 150 }, (_, i) => {
+        const random = Math.abs(Math.sin(i * 127.1 + 311.7) * 43758.5453) % 1;
+        const randomY = Math.abs(Math.sin(i * 269.5 + 183.3) * 24634.6345) % 1;
+        return { x: random, y: randomY, phase: i * 1.71, glyph: ['.', '.', '+', '*'][i % 4], size: i % 13 === 0 ? 12 : 9 };
+      });
+
+      function resize() {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = rect.width;
+        height = rect.height;
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function glow(x, y, radius, color, opacity = .7) {
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        gradient.addColorStop(0, color + Math.round(opacity * 255).toString(16).padStart(2, '0'));
+        gradient.addColorStop(1, color + '00');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawOrbit(cx, cy, rx, ry, alpha) {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.setLineDash([1, 5]);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = `rgba(151, 174, 204, ${alpha})`;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      function drawSun(cx, cy, t) {
+        glow(cx, cy, 91, '#e9a747', .28);
+        glow(cx, cy, 43, '#ffd879', .32);
+        for (let i = 0; i < 12; i++) {
+          const angle = i * Math.PI / 6 + t * .13;
+          const r = 29 + Math.sin(t * 2 + i) * 3;
+          ctx.fillStyle = i % 2 ? '#e9a747' : '#fff0b0';
+          ctx.globalAlpha = .65 + .3 * Math.sin(t * 2.4 + i * 2);
+          ctx.font = '13px "Courier New", monospace';
+          ctx.fillText(i % 3 ? '+' : '*', cx + Math.cos(angle) * r - 4, cy + Math.sin(angle) * r + 4);
+        }
+        ctx.globalAlpha = 1;
+        const core = ctx.createRadialGradient(cx - 5, cy - 6, 1, cx, cy, 22);
+        core.addColorStop(0, '#fff6ca');
+        core.addColorStop(.55, '#ffd26f');
+        core.addColorStop(1, '#d98135');
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff7d7';
+        ctx.font = 'bold 13px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('@', cx, cy + 1);
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'alphabetic';
+      }
+
+      function draw(t) {
+        ctx.clearRect(0, 0, width, height);
+        const cx = width / 2;
+        const cy = height / 2 + 4;
+        const outerX = Math.min(width * .455, 505);
+        const outerY = Math.min(height * .405, 204);
+
+        for (const star of stars) {
+          const alpha = .17 + (.56 * (Math.sin(t * .8 + star.phase) + 1) / 2);
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = star.glyph === '*' ? '#cad9ef' : '#92a4c0';
+          ctx.font = `${star.size}px "Courier New", monospace`;
+          ctx.fillText(star.glyph, star.x * width, star.y * height);
+        }
+        ctx.globalAlpha = 1;
+
+        planets.forEach((planet, index) => {
+          drawOrbit(cx, cy, outerX * planet.orbit, outerY * planet.orbit, .15 + index * .006);
+        });
+
+        // The asteroid belt is made of tiny drifting punctuation marks.
+        for (let i = 0; i < 115; i++) {
+          const angle = i * 2.39996 + t * .055;
+          const orbit = .425 + (i % 9) * .0023;
+          const x = cx + Math.cos(angle) * outerX * orbit;
+          const y = cy + Math.sin(angle) * outerY * orbit;
+          ctx.globalAlpha = .28 + (i % 4) * .1;
+          ctx.fillStyle = i % 7 === 0 ? '#d9b778' : '#8390a4';
+          ctx.font = '9px "Courier New", monospace';
+          ctx.fillText(i % 3 ? '.' : ',', x, y);
+        }
+        ctx.globalAlpha = 1;
+
+        drawSun(cx, cy, t);
+        planets.forEach((planet) => {
+          const angle = planet.phase + t * planet.speed * speed;
+          const x = cx + Math.cos(angle) * outerX * planet.orbit;
+          const y = cy + Math.sin(angle) * outerY * planet.orbit;
+          glow(x, y, planet.size * 2.2, planet.color, .27);
+          ctx.fillStyle = planet.color;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = `bold ${planet.size}px "Courier New", monospace`;
+          ctx.fillText(planet.glyph, x, y);
+          ctx.textAlign = 'start';
+          ctx.textBaseline = 'alphabetic';
+        });
+
+        // A quiet stream of code-like particles drifts across the scene.
+        for (let i = 0; i < 15; i++) {
+          const x = (i * 89 + t * (8 + (i % 4) * 3)) % width;
+          const y = (i * 53 + Math.sin(t * .5 + i) * 18 + height * .16) % (height * .72);
+          ctx.globalAlpha = .12 + (i % 3) * .05;
+          ctx.fillStyle = i % 2 ? '#95acd1' : '#e3bd78';
+          ctx.font = '10px "Courier New", monospace';
+          ctx.fillText(['.', '+', ':', '*'][i % 4], x, y);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function animate(now) {
+        if (!lastTime) lastTime = now;
+        const delta = Math.min((now - lastTime) / 1000, .05);
+        lastTime = now;
+        if (!paused) elapsed += delta;
+        draw(elapsed);
+        requestAnimationFrame(animate);
+      }
+
+      pauseButton.addEventListener('click', () => {
+        paused = !paused;
+        pauseButton.setAttribute('aria-pressed', String(paused));
+        pauseButton.innerHTML = paused ? '▶ &nbsp; RESUME' : 'Ⅱ &nbsp; PAUSE';
+        statusText.textContent = paused ? 'SYSTEM PAUSED' : 'SYSTEM ONLINE';
+        statusDot.style.background = paused ? '#e7c277' : '#8ce2bb';
+        statusDot.style.boxShadow = paused ? '0 0 12px #e7c27799' : '0 0 12px #8ce2bb99';
+      });
+      speedButton.addEventListener('click', () => {
+        const current = speedSteps.indexOf(speed);
+        speed = speedSteps[(current + 1) % speedSteps.length];
+        speedButton.textContent = `SPEED · ${speed.toFixed(1)}×`;
+      });
+      resetButton.addEventListener('click', () => { elapsed = 0; });
+      window.addEventListener('resize', resize);
+      window.addEventListener('keydown', (event) => {
+        if (event.code === 'Space' && !['BUTTON', 'A'].includes(document.activeElement.tagName)) {
+          event.preventDefault();
+          pauseButton.click();
+        }
+      });
+      resize();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
+
