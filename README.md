@@ -1,29 +1,26 @@
-# Orbiting Code — ASCII Solar System
+# Campus League
 
-작은 글자와 점, 빛으로 그린 움직이는 태양계입니다. 방문자의 방명록 글은 행성이 되고, 하나씩 모여 은하를 만듭니다.
+한국·미국 주식을 이용한 대학생용 가상 투자 리그의 GitHub Pages 사이트입니다.
 
-## 웹에서 보기
+## 화면 기능
 
-<https://jjanggoo5950-code.github.io/universe/>
+- 참가자마다 ₩10,000,000의 가상자금으로 시작
+- 원화·달러 지갑과 USD/KRW 환전
+- 한국·미국 주식 매수·매도 연습
+- 학교별 수익금 합계와 참가자 평균 수익률
+- 개인 최고 수익률·최저 수익률 기록
+- 작은 화면에서도 쓸 수 있는 대시보드
 
-`main` 브랜치에 변경 사항을 올리면 GitHub Actions가 페이지를 다시 배포합니다.
+## 미리보기
 
-## 익명 방명록 설정
+현재 예시 시세를 사용하는 데모가 기본 화면입니다. 브라우저에서 만든 계좌와 거래는 해당 브라우저에만 저장됩니다. 실제 가격 또는 다른 사람과 공유되는 순위로 오해하지 않도록 화면에서 데모 모드임을 표시합니다.
 
-방명록은 Supabase 데이터베이스와 Cloudflare Turnstile 봇 방지를 사용합니다. Supabase에서 익명 로그인을 켜고 SQL 정책을 적용한 뒤 CAPTCHA를 설정해야 글을 저장할 수 있습니다. 순서는 [방명록 설정 안내](방명록_설정_안내.md)를 참고하세요.
+## 온라인 리그 준비
 
-## Python 터미널 애니메이션
+1. Supabase SQL Editor에서 campus_league_setup.sql을 실행합니다.
+2. Supabase Authentication에서 익명 로그인을 활성화하고 Cloudflare Turnstile CAPTCHA를 설정합니다.
+3. 서버 측 시세 수집 함수를 배포하고 적절한 가격 피드와 시세 사용 조건을 설정합니다.
+4. 실제 시세가 연결된 종목만 market_quotes 테이블에서 매매 가능하게 표시합니다. 예시 시세는 SQL에서도 주문할 수 없게 막혀 있습니다.
 
-Python 3만 있으면 실행할 수 있습니다. 외부 패키지는 필요하지 않습니다.
-
-```bash
-python solar_system_ascii.py
-```
-
-- `Space`: 일시정지 / 재생
-- `+` 또는 `-`: 공전 속도 조절
-- `Q`: 종료
-- `python solar_system_ascii.py --once`: 한 장면만 출력
-
-행성 크기와 궤도는 시각화를 위한 표현이며 실제 비율과 다릅니다.
+자세한 안내는 캠퍼스리그_설정안내.md를 참고하세요. 비밀 키나 service_role 키는 HTML, GitHub, 브라우저 코드에 넣지 마세요.
 
