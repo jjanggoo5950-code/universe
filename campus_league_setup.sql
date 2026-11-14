@@ -127,6 +127,12 @@ declare
   v_school_id bigint;
 begin
   if v_uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if not (
+    coalesce(auth.jwt() -> 'app_metadata' -> 'providers', '[]'::jsonb) ? 'kakao'
+    or auth.jwt() -> 'app_metadata' ->> 'provider' = 'kakao'
+  ) then
+    raise exception '카카오 로그인 후 이용해주세요.';
+  end if;
   if char_length(trim(coalesce(p_nickname,''))) not between 1 and 20 then raise exception '별명은 1~20자로 입력해주세요.'; end if;
   if char_length(trim(coalesce(p_school_name,''))) not between 2 and 40 then raise exception '대학교 이름을 확인해주세요.'; end if;
 
@@ -162,6 +168,12 @@ declare
   v_usd numeric(18,4);
 begin
   if v_uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if not (
+    coalesce(auth.jwt() -> 'app_metadata' -> 'providers', '[]'::jsonb) ? 'kakao'
+    or auth.jwt() -> 'app_metadata' ->> 'provider' = 'kakao'
+  ) then
+    raise exception '카카오 로그인 후 이용해주세요.';
+  end if;
   if p_krw_amount is null or p_krw_amount < 1000 then raise exception '최소 환전 금액은 1,000원입니다.'; end if;
   select price,as_of,freshness into v_fx,v_fx_as_of,v_fx_freshness
     from public.market_quotes where symbol='USD/KRW' and market='FX' and is_tradable;
@@ -195,6 +207,12 @@ declare
   v_owned bigint;
 begin
   if v_uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if not (
+    coalesce(auth.jwt() -> 'app_metadata' -> 'providers', '[]'::jsonb) ? 'kakao'
+    or auth.jwt() -> 'app_metadata' ->> 'provider' = 'kakao'
+  ) then
+    raise exception '카카오 로그인 후 이용해주세요.';
+  end if;
   if p_side not in ('buy','sell') then raise exception '매수 또는 매도를 선택해주세요.'; end if;
   if p_quantity is null or p_quantity not between 1 and 100000 then raise exception '주문 수량을 확인해주세요.'; end if;
   select * into v_quote from public.market_quotes where symbol=p_symbol and market in ('KR','US');
