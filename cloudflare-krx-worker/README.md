@@ -1,6 +1,6 @@
 # Cloudflare KIS KRX collector
 
-This Worker keeps KIS credentials on Cloudflare, subscribes to four KRX trade streams, and upserts real-time quote snapshots to the Campus League Supabase `market_quotes` table. The GitHub Pages site reads those rows through Supabase Realtime.
+This Worker keeps KIS credentials on Cloudflare, subscribes to four KRX trade streams, and upserts quotes to the Campus League Supabase `market_quotes` table. It also retrieves daily bars for four KRX and four NASDAQ sample stocks every 15 minutes, so the site has the most recent completed daily price when a market is closed. The GitHub Pages site reads those rows through Supabase Realtime.
 
 ## Deploy from the existing GitHub repository
 
@@ -20,11 +20,12 @@ The Supabase project URL is deliberately part of the source because it is not a 
 
 Run `campus_league_setup.sql` in the Supabase SQL Editor first. It creates `market_quotes`, enables row level security, and adds the table to Supabase Realtime. The collector cannot publish until that table exists.
 
-The first version subscribes to Samsung Electronics, SK hynix, NAVER, and Hyundai Motor (`005930`, `000660`, `035420`, `005380`). It only writes KRX prices. U.S. equity and USD/KRW feeds are separate integrations and remain unavailable until configured.
+The real-time WebSocket subscribes to Samsung Electronics, SK hynix, NAVER, and Hyundai Motor (`005930`, `000660`, `035420`, `005380`). Daily snapshots include those KRX stocks and Apple, NVIDIA, Microsoft, and Tesla (`AAPL`, `NVDA`, `MSFT`, `TSLA`). Daily prices are marked `end_of_day` and are never tradable; only fresh KRX WebSocket ticks can enable Korean stock orders. USD/KRW remains a separate feed, and U.S. quotes are daily bars rather than real-time quotes.
 
 ## Notes
 
 - `/health` exposes only service state and timestamps, never credentials.
 - KIS WebSocket responses use the documented `H0STCNT0` trade stream. The collector reconnects after dropped connections and limits database writes to about one per symbol per second.
+- The `/health` response includes the latest WebSocket tick and daily-snapshot refresh results. Daily quote dates come from KIS daily bars, rather than the time the Worker fetched them.
 - Validate that the KIS account's API terms permit displaying the feed publicly before opening the league to visitors.
 
