@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 16231)
-Total output lines: 834
-
 <!doctype html>
 <html lang="ko">
 <head>
@@ -328,7 +325,121 @@ Total output lines: 834
           <div class="trade-symbol"><span id="trade-badge" class="trade-big-badge">—</span><div><div class="asset-name" id="trade-name">종목을 선택하세요</div><div class="trade-price" id="trade-price">시장 목록의 주문 버튼을 눌러주세요.</div></div></div>
           <div class="segmented"><button class="buy active" data-side="buy" type="button">매수</button><button class="sell" data-side="sell" type="button">매도</button></div>
           <label class="field">주문 수량<input id="order-quantity" type="number" min="1" step="1" value="1"></label>
-          <div class="order-preview"><div class="preview-row"><span>주문 예상 금액</span><strong id="order-value">—</strong></div><div class…2231 tokens truncated…sis.cost * USDKRW : basis.cost;
+          <div class="order-preview"><div class="preview-row"><span>주문 예상 금액</span><strong id="order-value">—</strong></div><div class="preview-row"><span>사용 가능 현금</span><strong id="available-cash">—</strong></div></div>
+          <button id="trade-submit" class="primary trade-submit" type="button">참가 후 주문하기</button>
+          <p id="trade-status" class="inline-status" role="status">먼저 리그 참가 후 주문할 수 있습니다.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="portfolio-view" class="view">
+      <div class="view-head"><div><h2>My portfolio</h2><p>1,000만원으로 시작한 가상 계좌와 매매 기록.</p></div><span class="data-chip"><i class="data-dot"></i> PAPER ACCOUNT</span></div>
+      <div class="subgrid">
+        <section class="card">
+          <div class="card-heading"><div><h2 class="card-title">자산 현황</h2><p class="card-description">미국 종목은 현재 게임 환율로 원화 환산합니다.</p></div></div>
+          <div class="tiny-label">TOTAL ASSETS · KRW</div><div class="portfolio-total" id="portfolio-total">₩10,000,000</div>
+          <div class="portfolio-meta"><span>수익률 <strong id="portfolio-return">0.00%</strong></span><span>수익금 <strong id="portfolio-profit">₩0</strong></span><span>USD/KRW <strong id="portfolio-fx">₩1,380</strong></span></div>
+          <div class="currency-panel" style="margin-top:18px"><div><div class="currency-label">CASH · KRW</div><div class="currency-amount" id="portfolio-krw">₩10,000,000</div></div><div class="swap">+</div><div><div class="currency-label">CASH · USD</div><div class="currency-amount" id="portfolio-usd">$0.00</div></div></div>
+        </section>
+        <section class="card"><div class="card-heading"><div><h2 class="card-title">보유 종목</h2><p class="card-description">평가 손익은 예시 시세를 기준으로 계산됩니다.</p></div></div><div id="portfolio-holdings" class="holdings"></div></section>
+      </div>
+      <section class="card" style="margin-top:15px">
+        <div class="card-heading"><div><h2 class="card-title">최근 거래</h2><p class="card-description">이 브라우저에 저장된 모의 주문 내역</p></div></div>
+        <div style="overflow-x:auto"><table class="history"><thead><tr><th>날짜</th><th>구분</th><th>종목</th><th>수량</th><th>체결가</th><th>합계</th></tr></thead><tbody id="history-rows"></tbody></table></div>
+      </section>
+    </section>
+
+    <section id="records-view" class="view">
+      <div class="view-head"><div><h2>Hall of fame</h2><p>시즌 최고·최저 수익률과 학교별 순위 기록.</p></div><span class="data-chip"><i class="data-dot"></i> SEASON 01</span></div>
+      <section class="card">
+        <div class="card-heading"><div><h2 class="card-title">이번 시즌 개인 기록</h2><p class="card-description">최고와 최저 기록은 참가자 전체의 수익률을 비교합니다.</p></div></div>
+        <div id="hall-of-fame-full" class="halls"></div>
+        <p class="privacy-note">온라인 대회가 열리면 참가자가 공개에 동의한 별명·학교·수익률이 명예의 전당에 표시됩니다. 실명·연락처·계좌 정보는 올리지 마세요.</p>
+      </section>
+      <section class="card" style="margin-top:15px"><div class="card-heading"><div><h2 class="card-title">학교 대항 순위</h2><p class="card-description">학교별 수익금 합계와 참가자 평균 수익률.</p></div></div><div id="school-leaderboard-full" class="leader-list"></div></section>
+    </section>
+
+    <footer class="footer"><span>CAMPUS LEAGUE · 모의투자 교육용 프로토타입</span><span>실제 주문·환전 없음 · 예시 시세는 투자 판단에 사용할 수 없습니다.</span></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "campus-league-local-demo-v1";
+      const STARTING_CAPITAL = 10000000;
+      let USDKRW = 1380;
+      const assets = [
+        { symbol:"005930", code:"KRX", name:"삼성전자", market:"KR", currency:"KRW", price:72000, change:0.82, badge:"SS", freshness:"demo", tradable:false, asOf:null },
+        { symbol:"000660", code:"KRX", name:"SK하이닉스", market:"KR", currency:"KRW", price:214000, change:1.34, badge:"SK", freshness:"demo", tradable:false, asOf:null },
+        { symbol:"035420", code:"KRX", name:"NAVER", market:"KR", currency:"KRW", price:207000, change:-0.42, badge:"N", freshness:"demo", tradable:false, asOf:null },
+        { symbol:"005380", code:"KRX", name:"현대차", market:"KR", currency:"KRW", price:268000, change:0.26, badge:"H", freshness:"demo", tradable:false, asOf:null },
+        { symbol:"AAPL", code:"NASDAQ", name:"Apple", market:"US", currency:"USD", price:228.50, change:0.71, badge:"A", freshness:"demo", tradable:false, asOf:null },
+        { symbol:"NVDA", code:"NASDAQ", name:"NVIDIA", market:"US", currency:"USD", price:141.25, change:1.92, badge:"NV", freshness:"demo", tradable:false, asOf:null },
+        { symbol:"MSFT", code:"NASDAQ", name:"Microsoft", market:"US", currency:"USD", price:416.30, change:-0.31, badge:"M", freshness:"demo", tradable:false, asOf:null },
+        { symbol:"TSLA", code:"NASDAQ", name:"Tesla", market:"US", currency:"USD", price:338.70, change:-1.08, badge:"T", freshness:"demo", tradable:false, asOf:null }
+      ];
+      let state = loadState();
+      let selectedAsset = assets[0];
+      let selectedSide = "buy";
+      let activeMarket = "ALL";
+      let toastTimer = 0;
+      let remoteClient = null, remoteMode = false, remoteSummary = null, captchaToken = null, turnstileWidgetId = null;
+      let fxFreshness = "demo", fxTradable = false;
+
+      function loadState() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+          if (parsed && parsed.wallet && Array.isArray(parsed.trades)) return parsed;
+        } catch (_) {}
+        return { profile:null, wallet:{ krw:STARTING_CAPITAL, usd:0 }, trades:[], joinedAt:null };
+      }
+      function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      function formatKRW(n) { return "₩" + Math.round(n || 0).toLocaleString("ko-KR"); }
+      function formatUSD(n) { return "$" + Number(n || 0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+      function quoteContext(asset) {
+        if (asset.freshness === "demo") return "예시 시세";
+        if (asset.freshness === "real_time") return "실시간";
+        if (asset.freshness === "end_of_day") {
+          const date = asset.asOf ? new Date(asset.asOf).toLocaleDateString("ko-KR", { timeZone:"Asia/Seoul", year:"numeric", month:"2-digit", day:"2-digit" }) : "최근 거래일";
+          return "장 마감 · " + date + " 종가";
+        }
+        if (asset.freshness === "delayed") return "지연 시세";
+        return "참고 시세";
+      }
+      function formatReturn(n) { const sign = n > 0 ? "+" : ""; return sign + Number(n || 0).toFixed(2) + "%"; }
+      function signedClass(n) { return n > 0 ? "positive" : n < 0 ? "negative" : "muted"; }
+      function anyQuotesHaveData() { return assets.some(a => a.freshness !== "demo") || fxFreshness !== "demo"; }
+      function allQuotesHaveData() { return assets.every(a => a.freshness !== "demo") && fxFreshness !== "demo"; }
+      function allQuotesAreRealtime() { return assets.every(a => a.freshness === "real_time") && fxFreshness === "real_time"; }
+      function escapeHTML(text) { return String(text).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+      function toast(message) {
+        const node = document.getElementById("toast");
+        node.textContent = message;
+        node.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => node.classList.remove("show"), 2600);
+      }
+      function signedShares(symbol) {
+        return state.trades.reduce((total, trade) => {
+          if (trade.symbol !== symbol) return total;
+          return total + (trade.side === "buy" ? trade.quantity : -trade.quantity);
+        }, 0);
+      }
+      function positionCost(symbol) {
+        let shares = 0, cost = 0;
+        state.trades.filter(t => t.symbol === symbol).forEach(t => {
+          if (t.side === "buy") { cost += t.price * t.quantity; shares += t.quantity; }
+          else if (shares > 0) { const avg = cost / shares; cost -= avg * Math.min(t.quantity, shares); shares -= Math.min(t.quantity, shares); }
+        });
+        return { shares, cost };
+      }
+      function metrics() {
+        const positions = assets.map(asset => {
+          const basis = positionCost(asset.symbol);
+          const shares = signedShares(asset.symbol);
+          const valueNative = shares * asset.price;
+          const valueKrw = asset.currency === "USD" ? valueNative * USDKRW : valueNative;
+          const costKrw = asset.currency === "USD" ? basis.cost * USDKRW : basis.cost;
           return { asset, shares, valueNative, valueKrw, costKrw, pnl:valueKrw-costKrw };
         }).filter(item => item.shares > 0);
         const holdingsKrw = positions.reduce((sum, p) => sum + p.valueKrw, 0);
@@ -720,4 +831,3 @@ Total output lines: 834
   </script>
 </body>
 </html>
-
