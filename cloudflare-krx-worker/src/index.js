@@ -439,7 +439,17 @@ export class KisCollector {
             tr_id: trId,
           },
         });
-        if (!response.ok) throw new Error(`kis_fx_http_${response.status}`);
+        if (!response.ok) {
+          const responseText = await response.text();
+          let detail = "";
+          try {
+            const errorBody = JSON.parse(responseText);
+            detail = String(errorBody.msg_cd || errorBody.error_code || errorBody.msg1 || "");
+          } catch {
+            detail = responseText.replace(/\s+/g, " ").slice(0, 80);
+          }
+          throw new Error(`kis_fx_http_${response.status}_${detail || "upstream_error"}`);
+        }
         const body = await response.json();
         if (String(body.rt_cd) !== "0") {
           throw new Error(`kis_fx_${body.msg_cd || body.rt_cd || "error"}`);
