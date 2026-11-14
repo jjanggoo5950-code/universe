@@ -266,7 +266,7 @@
               <span class="tiny-label">SCHOOL LEADERBOARD</span>
             </div>
             <div id="school-leaderboard" class="leader-list"></div>
-            <p class="privacy-note">지금은 이 브라우저에 저장되는 데모입니다. 실제 학교 간 순위는 Supabase 온라인 DB 설정을 마치면 공유됩니다.</p>
+            <p class="privacy-note" id="leaderboard-privacy-note">지금은 이 브라우저에 저장되는 데모입니다. 실제 학교 간 순위는 Supabase 연결이 완료되면 공유됩니다.</p>
           </section>
           <section class="card">
             <div class="card-heading">
@@ -279,7 +279,7 @@
         <aside class="stack right-column">
           <section class="join-card" id="join-card">
             <div class="card-heading" style="margin-bottom:0"><div><h2 class="card-title">리그 참가</h2><p class="card-description">모의 투자자로 등록하고 1,000만원을 받으세요.</p></div><span class="tiny-label">FREE</span></div>
-            <p class="join-copy">현재는 개인 기기에서만 저장되는 미리보기입니다. 학교 이름과 별명을 정하면 가상 계좌가 만들어져요.</p>
+            <p class="join-copy" id="join-copy">현재는 개인 기기에서만 저장되는 미리보기입니다. 학교 이름과 별명을 정하면 가상 계좌가 만들어져요.</p>
             <form class="join-form" id="join-form">
               <label class="field">별명<input id="nickname" maxlength="20" placeholder="예: 투자하는 고래" required></label>
               <label class="field">대학교<input id="school" maxlength="40" placeholder="예: 서울대학교" list="school-options" required><datalist id="school-options"><option>서울대학교</option><option>연세대학교</option><option>고려대학교</option><option>한국과학기술원</option><option>성균관대학교</option><option>한양대학교</option><option>부산대학교</option><option>경북대학교</option></datalist></label>
@@ -288,7 +288,7 @@
             </form>
           </section>
           <section class="card hidden" id="profile-card">
-            <div class="card-heading"><div><h2 class="card-title">내 참가 정보</h2><p class="card-description">현재 기기에 저장된 데모 계정입니다.</p></div><span class="tiny-label">LOCAL</span></div>
+            <div class="card-heading"><div><h2 class="card-title">내 참가 정보</h2><p class="card-description" id="profile-storage-copy">현재 기기에 저장된 데모 계정입니다.</p></div><span class="tiny-label" id="profile-storage-label">LOCAL</span></div>
             <div class="profile-card"><div class="profile-left"><span class="profile-avatar">✦</span><div style="min-width:0"><div class="profile-name" id="profile-name"></div><div class="profile-school" id="profile-school"></div></div></div><button class="secondary" id="edit-profile" type="button">수정</button></div>
           </section>
           <section class="card">
@@ -344,7 +344,7 @@
         <section class="card"><div class="card-heading"><div><h2 class="card-title">보유 종목</h2><p class="card-description">평가 손익은 예시 시세를 기준으로 계산됩니다.</p></div></div><div id="portfolio-holdings" class="holdings"></div></section>
       </div>
       <section class="card" style="margin-top:15px">
-        <div class="card-heading"><div><h2 class="card-title">최근 거래</h2><p class="card-description">이 브라우저에 저장된 모의 주문 내역</p></div></div>
+        <div class="card-heading"><div><h2 class="card-title">최근 거래</h2><p class="card-description" id="history-storage-copy">이 브라우저에 저장된 모의 주문 내역</p></div></div>
         <div style="overflow-x:auto"><table class="history"><thead><tr><th>날짜</th><th>구분</th><th>종목</th><th>수량</th><th>체결가</th><th>합계</th></tr></thead><tbody id="history-rows"></tbody></table></div>
       </section>
     </section>
@@ -468,6 +468,10 @@
       function renderLeaderboard() {
         const nodeIds = ["school-leaderboard","school-leaderboard-full"];
         const nodes = nodeIds.map(id => document.getElementById(id));
+        const note = document.getElementById("leaderboard-privacy-note");
+        if (note) note.textContent = remoteMode
+          ? "Supabase 온라인 DB에서 불러온 학교 순위입니다. 참가 정보와 모의 투자 성과가 온라인으로 저장됩니다."
+          : "지금은 이 브라우저에 저장되는 데모입니다. 실제 학교 간 순위는 Supabase 연결이 완료되면 공유됩니다.";
         if (remoteMode && remoteSummary) {
           const schools = remoteSummary.schools || [];
           const html = schools.length ? schools.map((school,index) =>
@@ -594,6 +598,16 @@
         document.getElementById("portfolio-usd").textContent = formatUSD(state.wallet.usd);
         document.getElementById("join-card").classList.toggle("hidden", Boolean(state.profile));
         document.getElementById("profile-card").classList.toggle("hidden", !state.profile);
+        const joinCopy = document.getElementById("join-copy");
+        if (joinCopy) joinCopy.textContent = remoteMode
+          ? "온라인 리그에 별명과 학교를 등록하고, 계정에 가상자금 1,000만원을 받으세요."
+          : "현재는 개인 기기에서만 저장되는 미리보기입니다. 학교 이름과 별명을 정하면 가상 계좌가 만들어져요.";
+        const profileCopy = document.getElementById("profile-storage-copy");
+        if (profileCopy) profileCopy.textContent = remoteMode ? "Supabase 온라인 계정에 저장된 참가 정보입니다." : "현재 기기에 저장된 데모 계정입니다.";
+        const profileLabel = document.getElementById("profile-storage-label");
+        if (profileLabel) profileLabel.textContent = remoteMode ? "ONLINE" : "LOCAL";
+        const historyCopy = document.getElementById("history-storage-copy");
+        if (historyCopy) historyCopy.textContent = remoteMode ? "Supabase 온라인 계정에 저장된 주문 내역" : "이 브라우저에 저장된 모의 주문 내역";
         if (state.profile) {
           document.getElementById("profile-name").textContent = state.profile.nickname;
           document.getElementById("profile-school").textContent = state.profile.school + " · 데모 계정";
