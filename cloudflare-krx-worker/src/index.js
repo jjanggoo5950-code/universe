@@ -1,6 +1,8 @@
 const KIS_REST_URL = "https://openapi.koreainvestment.com:9443";
 const KIS_WS_URL = "ws://ops.koreainvestment.com:21000/tryitout";
 const SUPABASE_PROJECT_URL = "https://cxgrrdxjrqxoayeknqkk.supabase.co";
+const SITE_ORIGIN = "https://jjanggoo5950-code.github.io";
+const US_EXCHANGES = new Set(["NAS", "NYS", "AMS"]);
 const KRX_SYMBOLS = ["005930", "000660", "035420", "005380"];
 const SNAPSHOT_INTERVAL_MS = 15 * 60 * 1000;
 const SNAPSHOT_ASSETS = [
@@ -15,9 +17,66 @@ const SNAPSHOT_ASSETS = [
 ];
 const STOCK_NAMES = Object.fromEntries(SNAPSHOT_ASSETS.map((asset) => [asset.symbol, asset.name]));
 
+function isRegularMarketOpen(market, now = new Date()) {
+  const timeZone = market === "KR" ? "Asia/Seoul" : "America/New_York";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const fields = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  if (fields.weekday === "Sat" || fields.weekday === "Sun") return false;
+  const minutes = Number(fields.hour) * 60 + Number(fields.minute);
+  return market === "KR"
+    ? minutes >= 9 * 60 && minutes < 15 * 60 + 30
+    : minutes >= 9 * 60 + 30 && minutes < 16 * 60;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const origin = request.headers.get("Origin");
+    const corsHeaders = {
+      "access-control-allow-origin": SITE_ORIGIN,
+      "access-control-allow-methods": "GET, OPTIONS",
+      "access-control-allow-headers": "Accept",
+      "cache-control": "no-store",
+      "vary": "Origin",
+    };
+
+    if (url.pathname === "/quote" && request.method === "OPTIONS") {
+      if (origin !== SITE_ORIGIN) return new Response(null, { status: 403 });
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    if (url.pathname === "/quote" && request.method === "GET") {
+      if (origin !== SITE_ORIGIN) {
+        return Response.json({ error: "origin_not_allowed" }, { status: 403 });
+      }
+      const market = url.searchParams.get("market");
+      const symbol = (url.searchParams.get("symbol") || "").trim().toUpperCase();
+      const exchange = (url.searchParams.get("exchange") || "").trim().toUpperCase();
+      const name = (url.searchParams.get("name") || "").trim().slice(0, 80);
+      const validSymbol = market === "KR"
+        ? /^[0-9A-Z]{6}$/.test(symbol)
+        : market === "US" && /^[A-Z0-9][A-Z0-9.\\-]{0,14}$/.test(symbol) && US_EXCHANGES.has(exchange);
+      if (!validSymbol || !name) {
+        return Response.json({ error: "invalid_symbol" }, { status: 400, headers: corsHeaders });
+      }
+      const id = env.KIS_COLLECTOR.idFromName("krx-main");
+      const target = new URL("https://collector.internal/quote");
+      target.search = new URLSearchParams({ market, symbol, exchange, name }).toString();
+      const response = await env.KIS_COLLECTOR.get(id).fetch(target.toString(), {
+        headers: { "cf-connecting-ip": request.headers.get("CF-Connecting-IP") || "" },
+      });
+      return new Response(response.body, {
+        status: response.status,
+        headers: { ...corsHeaders, "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
     if (url.pathname !== "/health" || request.method !== "GET") {
       return new Response("Not found", { status: 404 });
     }
@@ -56,6 +115,7 @@ export class KisCollector {
       this.lastSnapshotError = null;
       this.snapshotsRefreshing = null;
     this.lastPublishedAt = new Map();
+    this.quoteCache = new Map();
   }
 
   async fetch(request) {
@@ -103,6 +163,24 @@ export class KisCollector {
           last_snapshot_at: this.lastSnapshotAt,
           last_snapshot_error: this.lastSnapshotError,
         }, { status: 503 });
+      }
+    }
+
+    if (path === "/quote" && request.method === "GET") {
+      const url = new URL(request.url);
+      const market = url.searchParams.get("market");
+      const symbol = url.searchParams.get("symbol") || "";
+      const exchange = url.searchParams.get("exchange") || "";
+      const name = url.searchParams.get("name") || "";
+      try {
+        if (!await this.allowQuoteRequest(request.headers.get("CF-Connecting-IP") || "unknown")) {
+          return Response.json({ error: "quote_rate_limited" }, { status: 429, headers: { "retry-after": "60" } });
+        }
+        const quote = await this.fetchOnDemandQuote({ market, symbol, exchange, name });
+        if (!await this.publishQuote(quote)) throw new Error("quote_storage_failed");
+        return Response.json(quote, { headers: { "cache-control": "no-store" } });
+      } catch (error) {
+        return Response.json({ error: "quote_unavailable", message: this.safeError(error) }, { status: 502 });
       }
     }
 
@@ -392,12 +470,93 @@ export class KisCollector {
       price: latest.price,
       currency: asset.currency,
       change_pct: Number(changePct.toFixed(4)),
-      source: asset.market === "KR" ? "KIS_KRX_DAILY" : "KIS_NASDAQ_DAILY",
+      source: asset.market === "KR" ? "KIS_KRX_DAILY" : `KIS_${asset.exchange}_DAILY`,
       freshness: "end_of_day",
       is_tradable: false,
       as_of: dateIso,
       updated_at: new Date().toISOString(),
     };
+  }
+
+  async allowQuoteRequest(ip) {
+    const now = Date.now();
+    const key = "quote-rate:" + String(ip).slice(0, 64);
+    const saved = await this.ctx.storage.get(key);
+    const window = saved && now - Number(saved.startedAt) < 60_000
+      ? saved
+      : { startedAt: now, count: 0 };
+    if (window.count >= 30) return false;
+    await this.ctx.storage.put(key, { startedAt: window.startedAt, count: window.count + 1 }, { expirationTtl: 120 });
+    return true;
+  }
+
+  async fetchOnDemandQuote({ market, symbol, exchange, name }) {
+    const cacheKey = market + ":" + symbol;
+    const cached = this.quoteCache.get(cacheKey);
+    if (cached && Date.now() - cached.fetchedAt < 5_000) return cached.quote;
+
+    const asset = {
+      symbol,
+      market,
+      name,
+      currency: market === "KR" ? "KRW" : "USD",
+      exchange: market === "KR" ? "NAS" : exchange,
+    };
+    const accessToken = await this.getRestAccessToken();
+    let quote;
+
+    if (!isRegularMarketOpen(market)) {
+      quote = await this.fetchDailySnapshot(accessToken, asset);
+    } else {
+      const headers = {
+        "content-type": "application/json; charset=utf-8",
+        authorization: `Bearer ${accessToken}`,
+        appkey: this.env.KIS_APP_KEY,
+        appsecret: this.env.KIS_APP_SECRET,
+        custtype: "P",
+      };
+      let url;
+      if (market === "KR") {
+        url = new URL(`${KIS_REST_URL}/uapi/domestic-stock/v1/quotations/inquire-price`);
+        url.search = new URLSearchParams({
+          FID_COND_MRKT_DIV_CODE: "UN",
+          FID_INPUT_ISCD: symbol,
+        }).toString();
+        headers.tr_id = "FHKST01010100";
+      } else {
+        url = new URL(`${KIS_REST_URL}/uapi/overseas-price/v1/quotations/price`);
+        url.search = new URLSearchParams({ AUTH: "", EXCD: exchange, SYMB: symbol }).toString();
+        headers.tr_id = "HHDFS00000300";
+      }
+
+      const response = await fetch(url, { headers });
+      if (!response.ok) throw new Error(`kis_${market.toLowerCase()}_quote_http_${response.status}`);
+      const body = await response.json();
+      if (String(body.rt_cd) !== "0") {
+        throw new Error(`kis_${market.toLowerCase()}_quote_${body.msg_cd || body.rt_cd || "error"}`);
+      }
+      const output = body.output || body.output1 || {};
+      const price = Number(market === "KR" ? output.stck_prpr : output.last);
+      const change = Number(market === "KR" ? output.prdy_ctrt : output.rate);
+      if (!Number.isFinite(price) || price <= 0) throw new Error("kis_quote_price_missing");
+      const now = new Date().toISOString();
+      quote = {
+        symbol,
+        market,
+        name,
+        price,
+        currency: asset.currency,
+        change_pct: Number.isFinite(change) ? Number(change.toFixed(4)) : 0,
+        source: market === "KR" ? "KIS_KR_REST" : "KIS_US_REST",
+        freshness: "delayed",
+        is_tradable: true,
+        as_of: now,
+        updated_at: now,
+      };
+    }
+
+    this.quoteCache.set(cacheKey, { fetchedAt: Date.now(), quote });
+    return quote;
   }
 
   async publishQuote(quote) {
