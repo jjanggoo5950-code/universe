@@ -7,7 +7,7 @@ const KRX_SYMBOLS = ["005930", "000660", "035420", "005380"];
 const SNAPSHOT_INTERVAL_MS = 15 * 60 * 1000;
 const FX_REFRESH_INTERVAL_MS = 60 * 1000;
 const FX_SYMBOL = "USD/KRW";
-const KIS_FX_CODE = "XFX@KRW";
+const KIS_FX_CODE = "FX@KRWKFTC";
 const SNAPSHOT_ASSETS = [
   { symbol: "005930", market: "KR", name: "삼성전자", currency: "KRW" },
   { symbol: "000660", market: "KR", name: "SK하이닉스", currency: "KRW" },
@@ -135,7 +135,7 @@ export class KisCollector {
         realtime_kr_symbols: KRX_SYMBOLS,
         daily_snapshot_symbols: SNAPSHOT_ASSETS.map((asset) => asset.symbol),
         fx_symbol: FX_SYMBOL,
-        fx_source_version: "fx-daily-fallback-v5",
+        fx_source_version: "fx-daily-fallback-v4",
         last_fx_at: this.lastFxAt || savedFxStatus?.at || null,
         last_fx_error: this.lastFxError ?? savedFxStatus?.error ?? null,
         last_tick_at: this.lastTickAt,
