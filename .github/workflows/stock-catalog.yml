@@ -1,0 +1,35 @@
+name: Refresh listed stock catalog
+
+on:
+  schedule:
+    - cron: "0 18 * * 0-4"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stock-catalog
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download and parse KIS master files
+        run: python scripts/build_symbol_catalog.py --output-dir data
+      - name: Commit updated catalog
+        run: |
+          if git status --short data/ | grep -q .; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/
+            git commit -m "Refresh KIS listed stock catalog"
+            git push
+          fi
