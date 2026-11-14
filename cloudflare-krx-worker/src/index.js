@@ -162,7 +162,7 @@ export class KisCollector {
         realtime_kr_symbols: KRX_SYMBOLS,
         daily_snapshot_symbols: SNAPSHOT_ASSETS.map((asset) => asset.symbol),
         fx_symbol: FX_SYMBOL,
-        fx_source_version: "resilience-v1",
+        fx_source_version: "resilience-v2",
         queued_requests: this.restQueued,
         upstream_circuit_open: Date.now() < this.circuitUntil,
         last_fx_at: this.lastFxAt || savedFxStatus?.at || null,
@@ -513,7 +513,7 @@ export class KisCollector {
           const stampB = String(b.stck_bsop_date || "") + String(b.stck_cntg_hour || "");
           return stampB.localeCompare(stampA);
         })[0] || {};
-        const price = [output, latest].flatMap((row) => [
+        const price = [latest, output].flatMap((row) => [
           row.ovrs_nmix_prpr,
           row.fx_rate,
           row.fxrt,
@@ -548,6 +548,11 @@ export class KisCollector {
             }
           );
           parsed = parseFxBody(body);
+          const d = String(parsed.latest.stck_bsop_date || parsed.output.stck_bsop_date || "");
+          const t = String(parsed.latest.stck_cntg_hour || parsed.output.stck_cntg_hour || "");
+          const stamp = /^\d{8}$/.test(d) && /^\d{6}$/.test(t)
+            ? Date.parse(`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}T${t.slice(0,2)}:${t.slice(2,4)}:${t.slice(4,6)}+09:00`) : NaN;
+          if (!Number.isFinite(stamp) || now-stamp > 120000 || stamp > now+60000) parsed = null;
         } catch (error) {
           parsed = null;
           attempts.push(fxMarketCode + "_intraday_" + this.safeError(error));
@@ -729,7 +734,7 @@ export class KisCollector {
     return {
       symbol: asset.symbol,
       market: asset.market,
-      name: asset.name,
+      name: asset.market === "KR" ? (body.output1?.hts_kor_isnm || asset.name) : asset.name,
       price: latest.price,
       currency: asset.currency,
       change_pct: Number(changePct.toFixed(4)),
@@ -806,6 +811,7 @@ export class KisCollector {
   }
 
   async fetchOnDemandQuote(asset) {
+    asset = { ...asset, name: STOCK_NAMES[asset.symbol] || asset.symbol };
     const key = asset.market + ":" + asset.exchange + ":" + asset.symbol;
     const cached = this.quoteCache.get(key);
     const ttl = isRegularMarketOpen(asset.market) ? 15000 : 15 * 60000;

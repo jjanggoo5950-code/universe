@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="campus-release" content="20261115-resilience">
+  <meta name="campus-release" content="20261115-resilience-v2">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090b10">
   <meta name="description" content="한국·미국 주식으로 겨루는 대학생 모의투자 리그. 1,000만원으로 시작해 학교와 개인의 수익률을 쌓아보세요.">
@@ -263,6 +263,9 @@
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
   
+    .card-description, .stat-sub, .inline-status, .fx-foot, .profile-school, .leader-count { font-size:12px; line-height:1.65; }
+    .asset-meta, .quote-context { font-size:11px; line-height:1.5; }
+    .asset-name, .leader-school, .card-title { font-size:14px; }
     [hidden] { display:none !important; }
     .hero { padding:28px 0 22px; }
     .hero h1 { font-size:clamp(25px, 4vw, 38px); }
@@ -330,7 +333,7 @@
         <div class="stack">
           <section class="card">
             <div class="card-heading">
-              <div><h2 class="card-title">주식 마켓</h2><p class="card-description">한국과 미국 종목을 골라 모의 주문을 넣어보세요.</p></div>
+              <div><h2 class="card-title">주식 마켓</h2><p class="card-description"><button class="secondary" data-go="market" type="button">전체 종목 검색 →</button></p></div>
               <div class="market-tabs" aria-label="시장 선택"><button class="active" data-market="ALL">전체</button><button data-market="KR">한국</button><button data-market="US">미국</button></div>
             </div>
             <div style="overflow-x:auto">
@@ -539,6 +542,7 @@
         finally { actionBusy = false; render(); }
       }
       function formatKRW(n) { return "₩" + Math.round(n || 0).toLocaleString("ko-KR"); }
+      function formatFX(n) { return "₩" + Number(n || 0).toLocaleString("ko-KR",{minimumFractionDigits:1,maximumFractionDigits:2}); }
       function formatUSD(n) { return "$" + Number(n || 0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
       function quoteContext(asset) {
         if (asset.freshness === "demo") return "시세 대기";
@@ -735,7 +739,7 @@
           toast(status.textContent);
         }
       }
-      function formatReturn(n) { const sign = n > 0 ? "+" : ""; return sign + Number(n || 0).toFixed(2) + "%"; }
+      function formatReturn(n) { n = Math.abs(Number(n)) < 0.005 ? 0 : n; const sign = n > 0 ? "+" : ""; return sign + Number(n || 0).toFixed(2) + "%"; }
       function signedClass(n) { return n > 0 ? "positive" : n < 0 ? "negative" : "muted"; }
       function anyQuotesHaveData() { return assets.some(a => a.freshness !== "demo") || fxFreshness !== "demo"; }
       function allQuotesHaveData() { return assets.every(a => a.freshness !== "demo") && fxFreshness !== "demo"; }
@@ -843,7 +847,7 @@
           (activeMarket === "ALL" || a.market === activeMarket)
         );
         tbody.replaceChildren();
-        visible.forEach(asset => {
+        (targetId === "market-rows" ? visible.slice(0,4) : visible).forEach(asset => {
           const tr = document.createElement("tr");
           const changeClass = signedClass(asset.change);
           const orderDisabled = !asset.tradable || quoteExpired(asset);
@@ -1042,9 +1046,9 @@
         document.getElementById("stat-return").className = "stat-value " + signedClass(m.returnPct);
         document.getElementById("stat-profit").textContent = "수익금 " + (m.profit >= 0 ? "+" : "−") + formatKRW(Math.abs(m.profit));
         document.getElementById("stat-profit").className = "stat-sub " + signedClass(m.profit);
-        document.getElementById("stat-fx").textContent = fxFreshness === "demo" ? "—" : formatKRW(USDKRW);
+        document.getElementById("stat-fx").textContent = fxFreshness === "demo" ? "—" : formatFX(USDKRW);
         document.getElementById("stat-fx-sub").textContent = ({ demo:"환율 확인 중", real_time:"실시간 환율", end_of_day:"최근 거래일 환율", delayed:"지연 환율" }[fxFreshness] || "USD/KRW 환율");
-        document.getElementById("fx-display").textContent = fxFreshness === "demo" ? "환율 확인 중" : "1 USD = " + formatKRW(USDKRW);
+        document.getElementById("fx-display").textContent = fxFreshness === "demo" ? "환율 확인 중" : "1 USD = " + formatFX(USDKRW);
         document.getElementById("cash-krw").textContent = formatKRW(state.wallet.krw);
         document.getElementById("cash-usd").textContent = formatUSD(state.wallet.usd);
         document.getElementById("portfolio-total").textContent = formatKRW(m.total);
@@ -1052,7 +1056,7 @@
         document.getElementById("portfolio-return").className = signedClass(m.returnPct);
         document.getElementById("portfolio-profit").textContent = (m.profit >= 0 ? "+" : "−") + formatKRW(Math.abs(m.profit));
         document.getElementById("portfolio-profit").className = signedClass(m.profit);
-        document.getElementById("portfolio-fx").textContent = formatKRW(USDKRW);
+        document.getElementById("portfolio-fx").textContent = formatFX(USDKRW);
         document.getElementById("portfolio-krw").textContent = formatKRW(state.wallet.krw);
         document.getElementById("portfolio-usd").textContent = formatUSD(state.wallet.usd);
         document.getElementById("join-card").classList.toggle("hidden", Boolean(state.profile) && !editingProfile);

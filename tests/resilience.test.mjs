@@ -28,6 +28,15 @@ test('bounded queue rejects overload before fetching; zero and future quotes are
   assert.equal(await c.writeQuote({...quote(),price:0}),false);
   assert.equal(await c.writeQuote({...quote(),as_of:'2999-01-01'}),false);
 });
+test('FX response without a provider timestamp falls back to dated closing rate instead of pretending to be live',async()=>{
+  const c=collector(); let calls=0, saved;
+  const d=new Date(Date.now()-2*86400000).toISOString().slice(0,10).replaceAll('-','');
+  c.getRestAccessToken=async()=> 'fake';
+  c.fetchUpstream=async()=>{calls++;return Response.json(calls===1 ? {rt_cd:'0',output1:{ovrs_nmix_prpr:'9999'}} : {rt_cd:'0',output1:{ovrs_nmix_prpr:'9999'},output2:[{stck_bsop_date:d,ovrs_nmix_prpr:'1400'}]});};
+  c.publishQuote=async q=>{saved=q;return true;};
+  await c.refreshFxQuote(Date.now());
+  assert.equal(calls,2);assert.equal(saved.price,1400);assert.equal(saved.freshness,'end_of_day');assert.ok(Date.parse(saved.as_of)<Date.now()-86400000);
+});
 test('1,000 overview readers share one database calculation, then reuse cached result',async()=>{
   const original=global.fetch;let calls=0;
   global.fetch=async()=>{calls++;await new Promise(r=>setTimeout(r,10));return Response.json({quotes:[],schools:[]});};
