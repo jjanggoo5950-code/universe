@@ -496,6 +496,7 @@ export class KisCollector {
       }
 
       if (!parsed?.price) {
+        await new Promise((resolve) => setTimeout(resolve, 1_200));
         const endDate = new Date(now).toISOString().slice(0, 10).replaceAll("-", "");
         const startDate = new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replaceAll("-", "");
         body = await requestFx(
