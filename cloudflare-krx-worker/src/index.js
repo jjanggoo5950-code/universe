@@ -61,7 +61,7 @@ export default {
       const name = (url.searchParams.get("name") || "").trim().slice(0, 80);
       const validSymbol = market === "KR"
         ? /^[0-9A-Z]{6}$/.test(symbol)
-        : market === "US" && /^[A-Z0-9][A-Z0-9.\\-]{0,14}$/.test(symbol) && US_EXCHANGES.has(exchange);
+        : market === "US" && /^[A-Z0-9][A-Z0-9.-]{0,14}$/.test(symbol) && US_EXCHANGES.has(exchange);
       if (!validSymbol || !name) {
         return Response.json({ error: "invalid_symbol" }, { status: 400, headers: corsHeaders });
       }
@@ -69,7 +69,7 @@ export default {
       const target = new URL("https://collector.internal/quote");
       target.search = new URLSearchParams({ market, symbol, exchange, name }).toString();
       const response = await env.KIS_COLLECTOR.get(id).fetch(target.toString(), {
-        headers: { "cf-connecting-ip": request.headers.get("CF-Connecting-IP") || "" },
+        headers: { "x-caller-ip": request.headers.get("CF-Connecting-IP") || "" },
       });
       return new Response(response.body, {
         status: response.status,
@@ -173,7 +173,7 @@ export class KisCollector {
       const exchange = url.searchParams.get("exchange") || "";
       const name = url.searchParams.get("name") || "";
       try {
-        if (!await this.allowQuoteRequest(request.headers.get("CF-Connecting-IP") || "unknown")) {
+        if (!await this.allowQuoteRequest(request.headers.get("X-Caller-IP") || "unknown")) {
           return Response.json({ error: "quote_rate_limited" }, { status: 429, headers: { "retry-after": "60" } });
         }
         const quote = await this.fetchOnDemandQuote({ market, symbol, exchange, name });
@@ -548,7 +548,7 @@ export class KisCollector {
         currency: asset.currency,
         change_pct: Number.isFinite(change) ? Number(change.toFixed(4)) : 0,
         source: market === "KR" ? "KIS_KR_REST" : "KIS_US_REST",
-        freshness: "delayed",
+        freshness: "real_time",
         is_tradable: true,
         as_of: now,
         updated_at: now,
