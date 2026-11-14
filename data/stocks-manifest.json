@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-11-14T14:22:17.879302+00:00",
+  "markets": {
+    "KR": {
+      "count": 2878,
+      "files": [
+        "stocks-kr-01.tsv",
+        "stocks-kr-02.tsv"
+      ]
+    },
+    "US": {
+      "count": 6586,
+      "files": [
+        "stocks-us-01.tsv",
+        "stocks-us-02.tsv",
+        "stocks-us-03.tsv",
+        "stocks-us-04.tsv",
+        "stocks-us-05.tsv"
+      ]
+    }
+  },
+  "source": "KIS public security master files"
+}
+
