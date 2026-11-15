@@ -163,6 +163,8 @@ export class KisCollector {
         daily_snapshot_symbols: SNAPSHOT_ASSETS.map((asset) => asset.symbol),
         fx_symbol: FX_SYMBOL,
         fx_source_version: "resilience-v2",
+        loan_service_version: "loans-v1",
+        loan_settlement: await this.ctx.storage.get("loanSettlementStatus") || null,
         queued_requests: this.restQueued,
         upstream_circuit_open: Date.now() < this.circuitUntil,
         last_fx_at: this.lastFxAt || savedFxStatus?.at || null,
@@ -193,6 +195,7 @@ export class KisCollector {
       }
 
       try { await this.refreshHeldQuotes(); } catch (error) { this.lastError = this.safeError(error); }
+      await this.settleLoans();
 
       try {
         await this.ensureConnected();
@@ -446,6 +449,22 @@ export class KisCollector {
       if (now-last >= FX_REFRESH_INTERVAL_MS) await this.refreshFxQuote(now);
     })().finally(() => { this.fxRefreshing = null; });
     return this.fxRefreshing;
+  }
+
+  settleLoans() {
+    if (!this.loansSettling) this.loansSettling = (async () => {
+      if (Date.now()-Number(await this.ctx.storage.get("loanSettlementAttempt") || 0)<55000) return;
+      await this.ctx.storage.put("loanSettlementAttempt",Date.now());
+      try {
+        const response=await timedFetch(`${SUPABASE_PROJECT_URL}/rest/v1/rpc/settle_campus_loans_batch`,{
+          method:"POST",headers:{apikey:this.env.SUPABASE_SECRET_KEY,"content-type":"application/json"},body:JSON.stringify({p_limit:100}),
+        });
+        if (!response.ok) throw new Error("loan_settlement_unavailable");
+        const result=await response.json();
+        await this.ctx.storage.put("loanSettlementStatus",{at:new Date().toISOString(),processed:result.processed,error:null});
+      } catch { await this.ctx.storage.put("loanSettlementStatus",{at:new Date().toISOString(),error:"temporarily_unavailable"}); }
+    })().finally(()=>{this.loansSettling=null;});
+    return this.loansSettling;
   }
 
   refreshHeldQuotes() {

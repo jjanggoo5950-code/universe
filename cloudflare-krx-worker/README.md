@@ -4,8 +4,8 @@ This Worker keeps KIS credentials on Cloudflare and upserts quotes to the Campus
 
 ## Deploy from the existing GitHub repository
 
-1. Push this folder to `jjanggoo5950-code/universe` at `cloudflare-krx-worker/`.
-2. In Cloudflare, open **Workers & Pages → Create → Worker → Connect to Git** and select `jjanggoo5950-code/universe`.
+1. Push this folder to `kkaaoo1/universe` at `cloudflare-krx-worker/`.
+2. In Cloudflare, open **Workers & Pages → Create → Worker → Connect to Git** and select `kkaaoo1/universe`.
 3. Set the Worker name to `campus-league-krx-feed` and the **Root directory** to `cloudflare-krx-worker`. Leave the deploy command as `npx wrangler deploy`.
 4. Finish the first deployment. In the Worker, open **Settings → Variables and Secrets → Add → Secret**. Add each of these names and paste its value directly into Cloudflare:
    - `KIS_APP_KEY` — KIS Developers app key

@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="campus-release" content="20261115-popular-stocks">
+  <meta name="campus-release" content="20261115-loans-v1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090b10">
   <meta name="description" content="한국·미국 주식으로 겨루는 대학생 모의투자 리그. 1,000만원으로 시작해 학교와 개인의 수익률을 쌓아보세요.">
@@ -85,6 +85,17 @@
     .popularity-tabs { margin-bottom: 8px; }
     .popularity-hint { margin: 0 0 14px; color: var(--muted); font-size: 11px; line-height: 1.6; }
     .asset-popularity { display: block; margin-top: 4px; color: var(--lime); font-size: 10px; line-height: 1.5; }
+    .loan-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:14px 0; }
+    .loan-summary > div { min-width:0; padding:12px; border:1px solid var(--line); border-radius:8px; background:#0c1016; }
+    .loan-summary dt { color:var(--muted); font-size:11px; }
+    .loan-summary dd { margin:8px 0 0; overflow-wrap:anywhere; font-size:18px; font-variant-numeric:tabular-nums; }
+    .loan-actions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+    .loan-actions button { min-width:0; white-space:normal; min-height:42px; }
+    .loan-terms { color:#aeb9c9; font-size:12px; line-height:1.8; }
+    .loan-history { display:grid; gap:8px; margin-top:14px; }
+    .loan-event { display:flex; justify-content:space-between; gap:12px; padding-top:9px; border-top:1px solid var(--line); font-size:11px; }
+    .loan-event small { display:block; color:var(--muted); margin-top:4px; }
+    .loan-game-over { border-color:rgba(255,125,120,.4); color:#ffb3ad; }
     .stock-search { display: grid; grid-template-columns: minmax(0,1fr) 142px; gap: 8px; margin: 0 0 8px; }
     .stock-search input, .stock-search select { min-width: 0; width: 100%; padding: 10px 11px; border: 1px solid var(--line); border-radius: 7px; outline: none; color: var(--ink); background: #0b0f15; font-size: 11px; }
     .stock-search input:focus, .stock-search select:focus { border-color: rgba(197,243,107,.6); }
@@ -355,9 +366,10 @@
     </div>
 
     <div id="pending-action" class="notice" hidden><span id="pending-copy"></span><button id="retry-pending" class="secondary" type="button">이전 요청 확인</button></div>
+    <div id="loan-game-status" class="notice loan-game-over" role="status" hidden></div>
     <section id="dashboard-view" class="view active">
       <div class="stats">
-        <article class="stat"><div class="stat-label">총 자산</div><div class="stat-value" id="stat-assets">₩10,000,000</div><div class="stat-sub">현금 + 보유 자산 평가액</div></article>
+        <article class="stat"><div class="stat-label">순자산</div><div class="stat-value" id="stat-assets">₩10,000,000</div><div class="stat-sub">현금 + 주식 − 대출·이자</div></article>
         <article class="stat"><div class="stat-label">내 수익률</div><div class="stat-value" id="stat-return">0.00%</div><div class="stat-sub" id="stat-profit">수익금 ₩0</div></article>
         <article class="stat"><div class="stat-label">내 학교</div><div class="stat-value" id="stat-school">참가 전</div><div class="stat-sub">학교별 합산 수익금 · 평균 수익률</div></article>
         <article class="stat"><div class="stat-label">USD / KRW</div><div class="stat-value" id="stat-fx">₩1,380</div><div class="stat-sub" id="stat-fx-sub">예시 환율 · 게임용</div></article>
@@ -424,11 +436,17 @@
               <div><div class="currency-label">보유 달러</div><div class="currency-amount" id="cash-usd">$0.00</div><div class="currency-unit">USD WALLET</div></div>
             </div>
             <p class="fx-rate"><span id="fx-label">게임 환율</span> <strong id="fx-display">1 USD = ₩1,380</strong> <span id="fx-freshness" class="muted">· 예시 환율</span></p>
+            <label class="field">환전 방향<select id="exchange-direction"><option value="KRW_USD">원화 → 달러</option><option value="USD_KRW">달러 → 원화</option></select></label>
             <form class="exchange-form" id="exchange-form">
               <input id="exchange-amount" type="number" min="1000" step="1000" placeholder="환전할 원화" aria-label="환전할 원화" required>
               <button class="secondary" id="exchange-submit" type="submit">USD로 환전</button>
             </form>
             <p class="fx-foot">환율 변동은 미국 주식의 원화 평가액에도 반영됩니다.</p>
+          </section>
+          <section class="card">
+            <div class="card-heading"><div><h2 class="card-title">가상 대출</h2><p class="card-description">연 8% · 자기자본 한도</p></div><button class="secondary" type="button" data-go="portfolio">대출 관리</button></div>
+            <div class="preview-row"><span>대출 잔액</span><strong id="mini-loan-principal">₩0</strong></div>
+            <div class="preview-row"><span>추가 대출 가능</span><strong id="mini-loan-credit">—</strong></div>
           </section>
           <section class="card">
             <div class="card-heading"><div><h2 class="card-title">내 보유 종목</h2><p class="card-description">보유 수량과 평가 금액</p></div><button class="secondary" data-go="portfolio" type="button">전체 보기</button></div>
@@ -469,13 +487,30 @@
       <div class="view-head"><div><h2>내 투자</h2><p>1,000만원으로 시작한 가상 계좌와 매매 기록.</p></div><span class="data-chip"><i class="data-dot"></i> PAPER ACCOUNT</span></div>
       <div class="subgrid">
         <section class="card">
-          <div class="card-heading"><div><h2 class="card-title">자산 현황</h2><p class="card-description">미국 종목은 현재 게임 환율로 원화 환산합니다.</p></div></div>
-          <div class="tiny-label">TOTAL ASSETS · KRW</div><div class="portfolio-total" id="portfolio-total">₩10,000,000</div>
+          <div class="card-heading"><div><h2 class="card-title">자산 현황</h2><p class="card-description">대출 원금과 발생 이자를 차감한 순자산입니다.</p></div></div>
+          <div class="tiny-label">NET EQUITY · KRW</div><div class="portfolio-total" id="portfolio-total">₩10,000,000</div>
           <div class="portfolio-meta"><span>수익률 <strong id="portfolio-return">0.00%</strong></span><span>수익금 <strong id="portfolio-profit">₩0</strong></span><span>USD/KRW <strong id="portfolio-fx">₩1,380</strong></span></div>
           <div class="currency-panel" style="margin-top:18px"><div><div class="currency-label">CASH · KRW</div><div class="currency-amount" id="portfolio-krw">₩10,000,000</div></div><div class="swap">+</div><div><div class="currency-label">CASH · USD</div><div class="currency-amount" id="portfolio-usd">$0.00</div></div></div>
         </section>
         <section class="card"><div class="card-heading"><div><h2 class="card-title">보유 종목</h2><p class="card-description">보유 종목의 원화 평가 금액입니다.</p></div></div><div id="portfolio-holdings" class="holdings"></div></section>
       </div>
+      <section class="card" id="loan-card" style="margin-top:15px">
+        <div class="card-heading"><div><h2 class="card-title">가상 대출 · 연 8%</h2><p class="card-description">자기자본만큼 빌리고, 원화로 상환하세요.</p></div></div>
+        <dl class="loan-summary">
+          <div><dt>대출 원금</dt><dd id="loan-principal">₩0</dd></div>
+          <div><dt>추가 대출 가능</dt><dd id="loan-credit">—</dd></div>
+          <div><dt>발생 이자 · 납부 전</dt><dd id="loan-accrued">₩0</dd></div>
+          <div><dt>미납 이자</dt><dd id="loan-due">₩0</dd></div>
+        </dl>
+        <p class="loan-terms">한도는 현금과 주식 평가액에서 대출·이자를 뺀 자기자본입니다. 대출 잔액을 포함해 이 한도까지 빌릴 수 있습니다.<br>이자는 연 8%, 실제 이용 기간을 365일 기준으로 계산하며 매월 첫 대출일에 원화에서 자동 납부됩니다. 해당 날짜가 없는 달은 말일에 납부합니다.</p>
+        <p class="loan-terms" id="loan-billing">대출 후 납부일이 표시됩니다.</p>
+        <p class="loan-terms">원화가 부족하면 미납 이자가 쌓이고 추가 대출·매수·달러 환전이 제한됩니다. 매도와 원화 환전, 상환은 가능합니다. <strong class="negative">총자산이 대출 원금과 누적 이자 이하가 되면 파산하며, 이번 시즌에 재참가할 수 없습니다.</strong></p>
+        <p class="loan-terms" id="loan-season">이번 시즌: 2026년 12월 31일까지 (한국 시간)</p>
+        <label class="field">대출·상환 금액 (원)<input id="loan-amount" type="number" inputmode="numeric" min="1" step="1" placeholder="원화 금액 입력"></label>
+        <div class="loan-actions"><button id="loan-borrow" class="primary" type="button">대출받기</button><button id="loan-repay" class="secondary" type="button">일부 상환</button><button id="loan-repay-all" class="secondary" type="button">전액 상환</button></div>
+        <p class="inline-status" id="loan-status" role="status"></p>
+        <div class="loan-history" id="loan-history"></div>
+      </section>
       <section class="card" style="margin-top:15px">
         <div class="card-heading"><div><h2 class="card-title">최근 거래</h2><p class="card-description">가상 거래 내역</p></div></div>
         <div class="table-scroll"><table class="history"><thead><tr><th>날짜</th><th>구분</th><th>종목</th><th>수량</th><th>체결가</th><th>합계</th></tr></thead><tbody id="history-rows"></tbody></table></div>
@@ -526,7 +561,7 @@
         { symbol:"MSFT", code:"NASDAQ", name:"Microsoft", market:"US", currency:"USD", price:416.30, change:-0.31, badge:"M", freshness:"demo", tradable:false, asOf:null },
         { symbol:"TSLA", code:"NASDAQ", name:"Tesla", market:"US", currency:"USD", price:338.70, change:-1.08, badge:"T", freshness:"demo", tradable:false, asOf:null }
       ];
-      let state = { profile:null, wallet:{krw:STARTING_CAPITAL,usd:0}, trades:[], holdings:[], joinedAt:null };
+      let state = { profile:null, wallet:{krw:STARTING_CAPITAL,usd:0}, trades:[], holdings:[], loan:null, joinedAt:null };
       let actionBusy = false, editingProfile = false, overviewRequest = null, connectionMessage = "", fxAsOf = null;
       let selectedAsset = assets[0];
       let selectedSide = "buy";
@@ -572,6 +607,7 @@
           throw error;
         }
         localStorage.removeItem(key);
+        if (data?.ok === false) { void refreshRemotePortfolio().catch(() => {}); throw new Error(data.message || "요청을 처리할 수 없어요."); }
         return data;
       }
       async function runAction(work) {
@@ -881,6 +917,15 @@
       function signedShares(symbol) {
         return Number((state.holdings || []).find(h => h.symbol === symbol)?.quantity || 0);
       }
+      function loanAccrued() {
+        const loan=state.loan;
+        if (!loan) return 0;
+        const elapsed=loan.bankrupt_at || loan.season_closed ? 0 : Math.max(0,Math.min(Date.now(),Date.parse(loan.season_ends_at))-Number(loan.received_at || Date.now()))/1000;
+        return Number(loan.accrued_interest || 0)+Number(loan.principal || 0)*0.08*elapsed/31536000;
+      }
+      function loanDebt() { return Number(state.loan?.principal || 0)+Number(state.loan?.interest_due || 0)+loanAccrued(); }
+      function playClosed() { return Boolean(state.loan?.bankrupt_at || state.loan?.season_closed || remoteSummary?.season?.closed); }
+      function hasUnpaidInterest() { return Number(state.loan?.interest_due || 0)>0; }
       function metrics() {
         const positions = assets.map(asset => {
           
@@ -891,9 +936,11 @@
           return { asset, shares, valueNative, valueKrw };
         }).filter(item => item.shares > 0);
         const holdingsKrw = positions.reduce((sum, p) => sum + p.valueKrw, 0);
-        const total = state.wallet.krw + state.wallet.usd * USDKRW + holdingsKrw;
+        const gross = state.wallet.krw + state.wallet.usd * USDKRW + holdingsKrw;
+        const debt = loanDebt();
+        const total = state.loan?.final_equity != null ? Number(state.loan.final_equity) : gross-debt;
         const profit = total - STARTING_CAPITAL;
-        return { positions,total,profit,returnPct:profit/STARTING_CAPITAL*100 };
+        return { positions,gross,total,profit,returnPct:profit/STARTING_CAPITAL*100 };
       }
       function displayPrice(asset) { if (asset.freshness === "demo") return "—"; return asset.currency === "USD" ? formatUSD(asset.price) : formatKRW(asset.price); }
       function renderPopularityControls() {
@@ -1011,9 +1058,9 @@
         const remoteQuote = remoteMode && remoteSummary ? (remoteSummary.quotes || []).find(q => q.symbol === selectedAsset.symbol) : null;
         const blockedByQuote = (remoteMode && (!remoteQuote || !remoteQuote.is_tradable || (selectedAsset.currency === "USD" && !fxTradable))) ||
           (!selectedAsset.tradable && selectedAsset.freshness !== "demo") || quoteExpired(selectedAsset);
-        submit.disabled = actionBusy || !state.profile || !hasKakaoIdentity(authUser) || !navigator.onLine || blockedByQuote || !Number.isInteger(quantity) || quantity < 1 || (selectedSide === "buy" ? wallet < amount : owned < quantity);
+        submit.disabled = playClosed() || (selectedSide === "buy" && hasUnpaidInterest()) || actionBusy || !state.profile || !hasKakaoIdentity(authUser) || !navigator.onLine || blockedByQuote || !Number.isInteger(quantity) || quantity < 1 || (selectedSide === "buy" ? wallet < amount : owned < quantity);
         submit.title = blockedByQuote ? "현재가가 확인된 종목만 가상 매매할 수 있습니다." : "";
-        document.getElementById("trade-status").textContent = !state.profile
+        document.getElementById("trade-status").textContent = playClosed() ? "이번 시즌 참가가 종료됐습니다." : selectedSide === "buy" && hasUnpaidInterest() ? "미납 이자를 납부하면 매수할 수 있어요." : !state.profile
           ? "먼저 리그 참가 후 주문할 수 있습니다."
           : quoteExpired(selectedAsset)
             ? "시세가 2분 이상 지났어요. 검색 결과에서 다시 조회해주세요."
@@ -1101,7 +1148,7 @@
         document.getElementById("pending-action").hidden = !pending;
         if (pending) document.getElementById("pending-copy").textContent = pending.kind === "order"
           ? pending.payload.symbol + " " + pending.payload.quantity + "주 요청의 처리 결과를 확인해주세요."
-          : "이전 환전 요청의 처리 결과를 확인해주세요.";
+          : pending.kind === "loan" ? "이전 대출·상환 요청의 처리 결과를 확인해주세요." : "이전 환전 요청의 처리 결과를 확인해주세요.";
         document.getElementById("retry-pending").disabled = actionBusy;
       }
       document.getElementById("retry-pending").addEventListener("click", () => runAction(async () => {
@@ -1111,6 +1158,30 @@
         toast("이전 요청의 처리 결과를 확인했어요.");
         await refreshRemotePortfolio();
       }));
+      function renderLoan() {
+        const loan=state.loan, principal=Number(loan?.principal || 0), due=Number(loan?.interest_due || 0);
+        const credit=loan ? Math.max(0,Math.floor(metrics().total)-principal) : 0;
+        document.getElementById("loan-principal").textContent=formatKRW(principal);
+        document.getElementById("mini-loan-principal").textContent=formatKRW(principal);
+        document.getElementById("loan-credit").textContent=loan ? formatKRW(credit) : "—";
+        document.getElementById("mini-loan-credit").textContent=loan && !playClosed() && !due ? formatKRW(credit) : "—";
+        document.getElementById("loan-accrued").textContent=formatKRW(loanAccrued());
+        document.getElementById("loan-due").textContent=formatKRW(due);
+        document.getElementById("loan-due").classList.toggle("negative",due>0);
+        const next=loan?.next_due_at ? new Date(loan.next_due_at).toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul"}) : null;
+        document.getElementById("loan-billing").textContent=next ? "다음 납부일: "+next+" (한국 시간 00시) · 현재 원금 기준 월 이자 약 "+formatKRW(principal*0.08/12) : "대출 후 납부일이 표시됩니다. 중도 상환 시 이용한 기간의 이자를 먼저 납부합니다.";
+        const closed=playClosed(), disabled=actionBusy || closed || !state.profile || !loan || !navigator.onLine;
+        document.getElementById("loan-borrow").disabled=disabled || due>0 || !loan?.can_borrow || credit<1;
+        document.getElementById("loan-repay").disabled=disabled || loanDebt()<=0 || state.wallet.krw<=0;
+        document.getElementById("loan-repay-all").disabled=disabled || loanDebt()<=0 || state.wallet.krw+0.005<loanDebt();
+        document.getElementById("loan-status").textContent=closed ? (loan?.bankrupt_at ? "파산 · 이번 시즌 게임 오버" : "이번 시즌이 종료됐습니다.")
+          : !state.profile ? "리그에 참가하면 대출을 이용할 수 있어요." : !loan ? "대출 정보를 불러오고 있어요." : due>0 ? "미납 이자가 있습니다. 원화 잔액이 생기면 자동 납부됩니다."
+          : !loan.can_borrow ? "자산 시세를 확인한 뒤 대출할 수 있어요." : "대출금은 수익에 포함되지 않습니다. 이자는 자기자본에서 차감됩니다.";
+        const banner=document.getElementById("loan-game-status"); banner.hidden=!closed;
+        banner.textContent=loan?.bankrupt_at ? "게임 오버 · 총자산보다 대출과 이자가 많아 파산했습니다. 이번 시즌(2026년 12월 31일까지)은 재참가할 수 없습니다." : "2026년 시즌이 종료됐습니다. 다음 시즌은 별도로 안내됩니다.";
+        const labels={borrow:"대출",repay:"원금 상환",interest_charge:"이자 청구",interest_payment:"이자 납부",bankruptcy:"파산 당시 순자산"};
+        document.getElementById("loan-history").innerHTML=(loan?.events || []).slice(0,8).map(e=>'<div class="loan-event"><div>'+escapeHTML(labels[e.kind] || e.kind)+'<small>'+escapeHTML(new Date(e.occurred_at).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"}))+'</small></div><strong>'+formatKRW(e.amount)+'</strong></div>').join("");
+      }
       function render() {
         renderPending();
         const m = metrics();
@@ -1119,8 +1190,9 @@
         setConnectionMessage(connectionMessage);
         document.getElementById("fx-label").textContent = "USD/KRW 환율";
         document.getElementById("fx-freshness").textContent = "· " + ({ demo:"환율 확인 중", real_time:"실시간", end_of_day:"최근 거래일", delayed:"지연 시세" }[fxFreshness] || "환율");
-        document.getElementById("exchange-submit").disabled = actionBusy || !state.profile || !navigator.onLine || !fxTradable || quoteExpired({freshness:fxFreshness,asOf:fxAsOf});
-        document.querySelector("#join-form button[type=submit]").disabled = actionBusy;
+        const toKrw = document.getElementById("exchange-direction").value === "USD_KRW";
+        document.getElementById("exchange-submit").disabled = playClosed() || (!toKrw && hasUnpaidInterest()) || actionBusy || !state.profile || !navigator.onLine || (!toKrw && !fxTradable) || quoteExpired({freshness:fxFreshness,asOf:fxAsOf});
+        document.querySelector("#join-form button[type=submit]").disabled = actionBusy || playClosed();
         document.getElementById("stat-assets").textContent = formatKRW(m.total);
         document.getElementById("stat-return").textContent = formatReturn(m.returnPct);
         document.getElementById("stat-return").className = "stat-value " + signedClass(m.returnPct);
@@ -1154,6 +1226,7 @@
         renderHoldings("mini-holdings");
         renderHoldings("portfolio-holdings");
         renderHistory();
+        renderLoan();
         renderLeaderboard();
         renderHalls();
         renderTradePanel();
@@ -1238,12 +1311,29 @@
         document.querySelector("#join-form button[type=submit]").textContent = "별명 저장";
         render(); nicknameInput.focus();
       });
+      document.getElementById("exchange-direction").addEventListener("change", () => {
+        const toKrw=document.getElementById("exchange-direction").value === "USD_KRW";
+        const input=document.getElementById("exchange-amount"); input.value=""; input.min=toKrw?"0.01":"1000"; input.step=toKrw?"0.0001":"1";
+        input.placeholder=toKrw?"환전할 달러":"환전할 원화"; input.setAttribute("aria-label",input.placeholder);
+        document.getElementById("exchange-submit").textContent=toKrw?"원화로 환전":"USD로 환전"; render();
+      });
+      [["loan-borrow","borrow"],["loan-repay","repay"],["loan-repay-all","repay_all"]].forEach(([id,side]) => {
+        document.getElementById(id).addEventListener("click", () => runAction(async () => {
+          const amount=side==="repay_all"?0:Number(document.getElementById("loan-amount").value);
+          if (side!=="repay_all" && (!Number.isSafeInteger(amount) || amount<1)) throw new Error("금액을 1원 이상 정수로 입력해주세요.");
+          await submitAction("loan",{side,amount}); document.getElementById("loan-amount").value="";
+          toast(side==="borrow"?"가상 대출금이 원화로 입금됐어요.":"대출 상환이 완료됐어요.");
+          try { await refreshRemotePortfolio(); } catch { setConnectionMessage("요청은 처리됐지만 잔액을 불러오지 못했어요. 잠시 후 갱신됩니다."); }
+        }));
+      });
       document.getElementById("exchange-form").addEventListener("submit", event => {
         event.preventDefault();
         runAction(async () => {
           const amount = Number(document.getElementById("exchange-amount").value);
-          if (!Number.isInteger(amount) || amount < 1000) throw new Error("환전 금액을 1,000원 이상 정수로 입력해주세요.");
-          await submitAction("exchange", { amount });
+          const direction=document.getElementById("exchange-direction").value;
+          if (direction==="KRW_USD" && (!Number.isInteger(amount) || amount<1000)) throw new Error("환전 금액을 1,000원 이상 정수로 입력해주세요.");
+          if (direction==="USD_KRW" && (!Number.isFinite(amount) || amount<0.01)) throw new Error("달러 금액을 0.01 이상 입력해주세요.");
+          await submitAction("exchange", { amount,direction });
           document.getElementById("exchange-amount").value = "";
           toast("환전이 완료됐어요.");
           try { await refreshRemotePortfolio(); } catch { setConnectionMessage("환전은 완료됐지만 잔액을 불러오지 못했어요. 잠시 후 갱신됩니다."); }
@@ -1303,6 +1393,7 @@
       }
       function applyRemotePortfolio(data) {
         if (!data || !data.profile) { window.CampusLeague.clearLocalDemo(); return; }
+        state.loan = data.loan ? {...data.loan,received_at:Date.now()} : null;
         state.holdings = data.holdings || [];
         state.profile = { nickname:data.profile.nickname, school:data.profile.school };
         state.wallet = { krw:Number(data.wallet.cash_krw), usd:Number(data.wallet.cash_usd) };
@@ -1320,7 +1411,7 @@
       window.CampusLeague = {
         setClient(client) { remoteClient = client; remoteMode = true; updateAuthGate(); },
         setAuthUser(user) {
-          if (authUser?.id !== user?.id) { state = {profile:null,wallet:{krw:STARTING_CAPITAL,usd:0},trades:[],holdings:[]}; editingProfile=false; document.getElementById("open-school-picker").disabled=false; }
+          if (authUser?.id !== user?.id) { state = {profile:null,wallet:{krw:STARTING_CAPITAL,usd:0},trades:[],holdings:[],loan:null}; editingProfile=false; document.getElementById("open-school-picker").disabled=false; }
           authUser = user || null; authGateMessage = ""; render();
         },
         setConnectionMessage,
@@ -1330,7 +1421,7 @@
         applyRemoteOverview,
         applyRemotePortfolio,
         clearLocalDemo() {
-          state = { profile:null, wallet:{ krw:STARTING_CAPITAL, usd:0 }, trades:[], holdings:[], joinedAt:null };
+          state = { profile:null, wallet:{ krw:STARTING_CAPITAL, usd:0 }, trades:[], holdings:[], loan:null, joinedAt:null };
           try { localStorage.removeItem(STORAGE_KEY); } catch {}
           remoteMode = true;
           render();
