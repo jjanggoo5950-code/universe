@@ -1,7 +1,7 @@
 const KIS_REST_URL = "https://openapi.koreainvestment.com:9443";
 const KIS_WS_URL = "ws://ops.koreainvestment.com:21000/tryitout";
 const SUPABASE_PROJECT_URL = "https://cxgrrdxjrqxoayeknqkk.supabase.co";
-const SITE_ORIGIN = "https://jjanggoo5950-code.github.io";
+const SITE_ORIGIN = "https://kkaaoo1.github.io";
 const US_EXCHANGES = new Set(["NAS", "NYS", "AMS"]);
 const KRX_SYMBOLS = ["005930", "000660", "035420", "005380"];
 const SNAPSHOT_INTERVAL_MS = 15 * 60 * 1000;
