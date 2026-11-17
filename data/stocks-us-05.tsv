@@ -1,4 +1,6 @@
 symbol	name	english_name	market	exchange	exchange_name	currency	asset_type
+FLGT	펄젠트 제네틱스	FULGENT GENETICS INC	US	NAS	나스닥	USD	COMMON
+PRT	펌록 로열티 트러스트	PERMROCK ROYALTY TRUST	US	NYS	뉴욕증권거래소	USD	COMMON
 PEGA	페가시스템스	PEGASYSTEMS INC	US	NAS	나스닥	USD	COMMON
 PNTG	페넌트 그룹	PENNANT GROUP INC	US	NAS	나스닥	USD	COMMON
 PNNT	페넌트파크 인베스트먼트	PENNANTPARK INVEST CORP	US	NYS	뉴욕증권거래소	USD	COMMON

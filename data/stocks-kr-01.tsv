@@ -981,7 +981,6 @@ symbol	name	english_name	market	exchange	exchange_name	currency	asset_type
 066410	버킷스튜디오		KR	kosdaq	코스닥	KRW	ST
 002410	범양건영		KR	kospi	코스피	KRW	ST
 382900	범한퓨얼셀		KR	kosdaq	코스닥	KRW	ST
-206400	베노티앤알		KR	kosdaq	코스닥	KRW	ST
 019010	베뉴지		KR	kosdaq	코스닥	KRW	ST
 177350	베셀		KR	kosdaq	코스닥	KRW	ST
 457600	벡트로보틱스		KR	kosdaq	코스닥	KRW	ST
@@ -1489,6 +1488,7 @@ symbol	name	english_name	market	exchange	exchange_name	currency	asset_type
 084850	아이티엠반도체		KR	kosdaq	코스닥	KRW	ST
 309710	아이티켐		KR	kosdaq	코스닥	KRW	ST
 114840	아이패밀리에스씨		KR	kosdaq	코스닥	KRW	ST
+206400	아인스팩씨엔에스		KR	kosdaq	코스닥	KRW	ST
 027360	아주IB투자		KR	kosdaq	코스닥	KRW	ST
 139990	아주스틸		KR	kospi	코스피	KRW	ST
 032080	아즈텍WB		KR	kosdaq	코스닥	KRW	ST
