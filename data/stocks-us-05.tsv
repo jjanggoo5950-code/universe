@@ -1,4 +1,6 @@
 symbol	name	english_name	market	exchange	exchange_name	currency	asset_type
+PDPA	펄 다이버 크레딧 컴퍼니 우선주 A(2029 8.000%)	PEARL DIVER CREDIT COMPANY  INC 8.00% SER A TERM PREF STK DU	US	NYS	뉴욕증권거래소	USD	COMMON
+PLSE	펄스 바이오사이언시스	PULSE BIOSCIENCES INC	US	NAS	나스닥	USD	COMMON
 FLGT	펄젠트 제네틱스	FULGENT GENETICS INC	US	NAS	나스닥	USD	COMMON
 PRT	펌록 로열티 트러스트	PERMROCK ROYALTY TRUST	US	NYS	뉴욕증권거래소	USD	COMMON
 PEGA	페가시스템스	PEGASYSTEMS INC	US	NAS	나스닥	USD	COMMON

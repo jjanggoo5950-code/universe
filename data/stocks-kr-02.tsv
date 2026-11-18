@@ -113,6 +113,7 @@ symbol	name	english_name	market	exchange	exchange_name	currency	asset_type
 453860	에이에스텍		KR	kosdaq	코스닥	KRW	ST
 312610	에이에프더블류		KR	kosdaq	코스닥	KRW	ST
 015260	에이엔피		KR	kospi	코스피	KRW	ST
+471800	에이엘로봇		KR	kosdaq	코스닥	KRW	ST
 172670	에이엘티		KR	kosdaq	코스닥	KRW	ST
 234070	에이원큐브텍		KR	konex	코넥스	KRW	ST
 481070	에이유브랜즈		KR	kosdaq	코스닥	KRW	ST
@@ -706,8 +707,6 @@ symbol	name	english_name	market	exchange	exchange_name	currency	asset_type
 011000	진원생명과학		KR	kospi	코스피	KRW	ST
 250030	진코스텍		KR	kosdaq	코스닥	KRW	ST
 002780	진흥기업		KR	kospi	코스피	KRW	ST
-002787	진흥기업2우B		KR	kospi	코스피	KRW	ST
-002785	진흥기업우B		KR	kospi	코스피	KRW	ST
 233990	질경이		KR	konex	코넥스	KRW	ST
 025620	차AI헬스케어		KR	kospi	코스피	KRW	ST
 085660	차바이오텍		KR	kosdaq	코스닥	KRW	ST
