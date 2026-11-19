@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-18T18:53:26.196533+00:00",
+  "generated_at": "2026-11-19T18:56:50.390865+00:00",
   "markets": {
     "KR": {
       "count": 2879,
@@ -9,7 +9,7 @@
       ]
     },
     "US": {
-      "count": 6582,
+      "count": 6585,
       "files": [
         "stocks-us-01.tsv",
         "stocks-us-02.tsv",
